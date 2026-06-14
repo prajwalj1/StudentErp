@@ -1,0 +1,147 @@
+@import "tailwindcss";
+
+/* ───────────────── Theme Tokens ───────────────── */
+@theme {
+  --color-primary: #2563eb;
+  --color-secondary: #0f172a;
+  --color-accent: #f59e0b;
+
+  --color-background: #f8fafc;
+  --color-foreground: #0f172a;
+  --color-muted: #64748b;
+
+  --shadow-premium: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}
+
+/* ───────────────── Root Colors (Always Light) ───────────────── */
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+/* ───────────────── Base Body Styling ───────────────── */
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ───────────────── Glassmorphism Utility ───────────────── */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: var(--shadow-glass);
+}
+
+/* ───────────────── Custom Scrollbar ───────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+/* ───────────────── Sidebar Active Link ───────────────── */
+.sidebar-link-active {
+  background: linear-gradient(
+    90deg,
+    rgba(37, 99, 235, 0.1) 0%,
+    rgba(37, 99, 235, 0) 100%
+  );
+  border-left: 4px solid #2563eb;
+}
+
+/* ───────────────── Reusable Components ───────────────── */
+@layer components {
+  .card-premium {
+    @apply bg-white rounded-2xl border border-slate-200 transition-all duration-300 hover:shadow-lg;
+    box-shadow: var(--shadow-premium);
+  }
+
+  .btn-primary {
+    @apply px-5 py-2.5 rounded-xl text-white font-semibold transition-all duration-300;
+    background: var(--color-primary);
+  }
+
+  .btn-primary:hover {
+    filter: brightness(1.1);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+/* ───────────────── Nepali Date Picker Form Match ───────────────── */
+.ndp-input {
+  height: 2.5rem !important;
+  border-radius: 0.75rem !important;
+  border-color: #e2e8f0 !important;
+  background: #f8fafc !important;
+  font-weight: 500 !important;
+}
+.ndp-input-row {
+  border-radius: 0.75rem !important;
+}
+.ndp-root {
+  font-size: 0.875rem !important;
+}
+
+/* ───────────────── Pointer Cursor for All Interactive Elements ───────────────── */
+button,
+a,
+[role="button"],
+label,
+summary,
+select,
+input[type="checkbox"],
+input[type="radio"],
+input[type="file"],
+input[type="submit"],
+input[type="button"],
+input[type="reset"] {
+  cursor: pointer;
+}
+
+/* Restore default cursor for disabled buttons */
+button:disabled,
+a:disabled,
+[role="button"]:disabled,
+label:disabled {
+  cursor: not-allowed;
+}
