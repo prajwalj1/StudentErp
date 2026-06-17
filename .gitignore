@@ -13,6 +13,11 @@
 # testing
 /coverage
 
+# cypress artifacts
+/cypress/screenshots/
+/cypress/videos/
+/cypress/downloads/
+
 # next.js
 /.next/
 /out/

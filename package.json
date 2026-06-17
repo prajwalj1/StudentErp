@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "cypress": "^15.17.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.5",
     "tailwindcss": "^4"

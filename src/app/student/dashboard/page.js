@@ -57,7 +57,7 @@ export default function StudentDashboard() {
         fetch('/api/notices').then(r => r.json()),
       ])
         .then(([att, m, asgn, fees, routine, noticeData]) => {
-          setAttendanceRecords(att);
+          setAttendanceRecords(Array.isArray(att) ? att : att?.attendance ? att.attendance : []);
           setMarks(Array.isArray(m) ? m : []);
           const asgnArr = Array.isArray(asgn) ? asgn : [];
           setAssignments(asgnArr);
