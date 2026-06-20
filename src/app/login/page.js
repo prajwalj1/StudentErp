@@ -11,7 +11,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [loginSuccess, setLoginSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -30,28 +29,14 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
 
-    const result = await signIn("credentials", {
-      redirect: false,
+    const callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl") || undefined;
+
+    await signIn("credentials", {
+      redirect: true,
+      callbackUrl,
       identifier,
       password,
     });
-
-    if (result?.ok) {
-      sessionStorage.removeItem('noticePopupShown');
-      setLoginSuccess(true);
-      setTimeout(() => {
-        const callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl");
-        if (callbackUrl) {
-          window.location.href = callbackUrl;
-        } else {
-          router.replace("/");
-        }
-      }, 1500);
-    } else {
-      setError("Invalid credentials. Please try again.");
-    }
-
-    setLoading(false);
   };
 
   return (
@@ -188,20 +173,7 @@ export default function LoginPage() {
 
         </div>
       </div>
-      {/* Success Overlay */}
-      {loginSuccess && (
-        <div className="fixed inset-0 z-50 bg-white/90 backdrop-blur-sm flex items-center justify-center animate-fadeIn">
-          <div className="text-center animate-scaleIn">
-            <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-slate-900">Welcome back!</h2>
-            <p className="text-slate-500 mt-1">Redirecting to your dashboard...</p>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }
