@@ -80,29 +80,31 @@ const Footer = () => {
             </div>
           </div>
 
-          <div>
-            <h4 className="text-white font-bold mb-6">For Students</h4>
-            <ul className="space-y-4">
-              <li><Link href="/student/dashboard" className="hover:text-primary transition-colors">Dashboard</Link></li>
-              <li><Link href="/student/fees" className="hover:text-primary transition-colors">Fee Details</Link></li>
-              <li><Link href="/student/marksheet" className="hover:text-primary transition-colors">Marksheet</Link></li>
-              <li><Link href="/student/assignments" className="hover:text-primary transition-colors">Assignments</Link></li>
-              <li><Link href="/student/routine" className="hover:text-primary transition-colors">Class Routine</Link></li>
-            </ul>
+          <div className="md:col-span-2 grid grid-cols-2 gap-12">
+            <div>
+              <h4 className="text-white font-bold mb-6">For Students</h4>
+              <ul className="space-y-4">
+                <li><Link href="/student/dashboard" className="hover:text-primary transition-colors">Dashboard</Link></li>
+                <li><Link href="/student/fees" className="hover:text-primary transition-colors">Fee Details</Link></li>
+                <li><Link href="/student/marksheet" className="hover:text-primary transition-colors">Marksheet</Link></li>
+                <li><Link href="/student/assignments" className="hover:text-primary transition-colors">Assignments</Link></li>
+                <li><Link href="/student/routine" className="hover:text-primary transition-colors">Class Routine</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-white font-bold mb-6">For Teachers</h4>
+              <ul className="space-y-4">
+                <li><Link href="/teacher/dashboard" className="hover:text-primary transition-colors">Dashboard</Link></li>
+                <li><Link href="/teacher/classes" className="hover:text-primary transition-colors">My Classes</Link></li>
+                <li><Link href="/teacher/attendance" className="hover:text-primary transition-colors">Attendance</Link></li>
+                <li><Link href="/teacher/marks" className="hover:text-primary transition-colors">Marks Entry</Link></li>
+                <li><Link href="/teacher/exams" className="hover:text-primary transition-colors">Examinations</Link></li>
+              </ul>
+            </div>
           </div>
 
-          <div>
-            <h4 className="text-white font-bold mb-6">For Teachers</h4>
-            <ul className="space-y-4">
-              <li><Link href="/teacher/dashboard" className="hover:text-primary transition-colors">Dashboard</Link></li>
-              <li><Link href="/teacher/classes" className="hover:text-primary transition-colors">My Classes</Link></li>
-              <li><Link href="/teacher/attendance" className="hover:text-primary transition-colors">Attendance</Link></li>
-              <li><Link href="/teacher/marks" className="hover:text-primary transition-colors">Marks Entry</Link></li>
-              <li><Link href="/teacher/exams" className="hover:text-primary transition-colors">Examinations</Link></li>
-            </ul>
-          </div>
-
-          <div>
+          <div className="md:col-span-1">
             <h4 className="text-white font-bold mb-6">Stay Updated</h4>
             <p className="mb-6">Get the latest news and updates from Everest View ERP.</p>
             {msg && (
