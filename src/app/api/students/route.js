@@ -14,7 +14,7 @@ export async function GET(req) {
     }
 
     await dbConnect();
-    const students = await Student.find().sort({ name: 1 }).lean();
+    const students = await Student.find().select('-password').sort({ name: 1 }).lean();
 
     try {
       const groups = {};

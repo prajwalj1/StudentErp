@@ -20,6 +20,14 @@ const StudentSchema = new mongoose.Schema({
   feeStatus: { type: String, enum: ["pending", "partial", "completed"], default: "pending" },
   status: { type: String, enum: ["active", "graduated"], default: "active" },
   graduatedYear: { type: String, default: '' },
+}, {
+  toJSON: {
+    transform(doc, ret) {
+      delete ret.password;
+      delete ret.__v;
+      return ret;
+    },
+  },
 });
 // Ensure fresh schema on hot-reload (never use cached old schema)
 if (mongoose.models.Student) {

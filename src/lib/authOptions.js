@@ -20,12 +20,10 @@ export const authOptions = {
 
         await dbConnect();
         
-        // Hardcoded Owner for initial access
         if (credentials.identifier === "owner@erp.com" && credentials.password === "password") {
           return { id: "owner-1", name: "Administrator", email: "owner@erp.com", role: "OWNER" };
         }
 
-        // Check Teachers (by email or teacherId)
         const teacher = await Teacher.findOne({
           $or: [
             { email: credentials.identifier },
@@ -34,20 +32,7 @@ export const authOptions = {
         });
 
         if (teacher) {
-          // Check if password matches (either hashed or plain text for migration)
-          let isValid = false;
-          try {
-            isValid = await bcrypt.compare(credentials.password, teacher.password);
-          } catch (e) {
-            // If bcrypt fails (e.g. not a hash or bcrypt not installed correctly), fallback to plain comparison
-            isValid = teacher.password === credentials.password;
-          }
-
-          // Final fallback if bcrypt didn't throw but returned false, yet it might be a plain password
-          if (!isValid && teacher.password === credentials.password) {
-            isValid = true;
-          }
-
+          const isValid = await bcrypt.compare(credentials.password, teacher.password).catch(() => false);
           if (isValid) {
             return { 
               id: teacher._id.toString(), 
@@ -59,27 +44,16 @@ export const authOptions = {
           }
         }
 
-
-        // Check Students (by email or studentId)
         const student = await Student.findOne({
           $or: [
             { email: credentials.identifier },
             { studentId: credentials.identifier }
           ]
         });
+
         if (student) {
-          if (student.status === 'graduated') {
-            return null;
-          }
-          let isValid = false;
-          try {
-            isValid = await bcrypt.compare(credentials.password, student.password);
-          } catch (e) {
-            isValid = student.password === credentials.password;
-          }
-          if (!isValid && student.password === credentials.password) {
-            isValid = true;
-          }
+          if (student.status === 'graduated') return null;
+          const isValid = await bcrypt.compare(credentials.password, student.password).catch(() => false);
           if (isValid) {
             return { id: student._id.toString(), name: student.name, email: student.email, role: "STUDENT", studentId: student.studentId, grade: student.grade };
           }
@@ -89,6 +63,10 @@ export const authOptions = {
       },
     }),
   ],
+  session: {
+    strategy: "jwt",
+    maxAge: 60 * 60 * 24,
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {

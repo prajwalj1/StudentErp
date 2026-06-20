@@ -24,7 +24,7 @@ export async function GET(req) {
 
     await dbConnect();
 
-    const teacher = await Teacher.findOne({ email: session.user.email }).lean();
+    const teacher = await Teacher.findOne({ email: session.user.email }).select('-password').lean();
     if (!teacher) {
       return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
     }

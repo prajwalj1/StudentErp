@@ -15,7 +15,7 @@ export async function PATCH(req) {
     }
 
     await dbConnect();
-    const students = await Student.find().lean();
+    const students = await Student.find().select('-password').lean();
 
     // Collect unique old grades before promotion (for mark deletion)
     const oldGrades = [...new Set(students.map(s => s.grade).filter(Boolean))];

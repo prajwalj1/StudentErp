@@ -14,7 +14,7 @@ export async function GET(req) {
     }
 
     await dbConnect();
-    const teachers = await Teacher.find().sort({ _id: -1 }).lean();
+    const teachers = await Teacher.find().select('-password').sort({ _id: -1 }).lean();
     return NextResponse.json(teachers);
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });

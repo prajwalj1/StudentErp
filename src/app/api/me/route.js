@@ -15,7 +15,7 @@ export async function GET() {
     const profile = { id: session.user.id, name: session.user.name, email: session.user.email, role: session.user.role };
 
     if (session.user.role === "STUDENT") {
-      const student = await Student.findOne({ studentId: session.user.studentId }).lean();
+      const student = await Student.findOne({ studentId: session.user.studentId }).select('-password').lean();
       if (student) {
         profile.grade = student.grade;
         profile.studentId = student.studentId;
@@ -24,7 +24,7 @@ export async function GET() {
     }
 
     if (session.user.role === "TEACHER") {
-      const teacher = await Teacher.findById(session.user.id).lean();
+      const teacher = await Teacher.findById(session.user.id).select('-password').lean();
       if (teacher) {
         profile.teacherId = teacher.teacherId;
       }

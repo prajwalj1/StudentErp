@@ -26,7 +26,7 @@ export async function PATCH(req, { params }) {
       updateFields.password = await bcrypt.hash(body.password, 10);
     }
 
-    const updated = await Student.findByIdAndUpdate(id, { $set: updateFields }, { new: true, runValidators: true }).lean();
+    const updated = await Student.findByIdAndUpdate(id, { $set: updateFields }, { new: true, runValidators: true }).select('-password').lean();
     if (!updated) {
       return NextResponse.json({ error: "Student not found" }, { status: 404 });
     }

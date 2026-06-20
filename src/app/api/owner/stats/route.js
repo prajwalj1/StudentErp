@@ -98,6 +98,7 @@ export async function GET(req) {
 
     // Recent 5 students
     const recentStudents = await Student.find({ status: { $ne: 'graduated' } })
+      .select('-password')
       .sort({ createdAt: -1 })
       .limit(5)
       .lean();
@@ -111,6 +112,7 @@ export async function GET(req) {
 
     // Recent 3 teachers
     const recentTeachers = await Teacher.find()
+      .select('-password')
       .sort({ createdAt: -1 })
       .limit(3)
       .lean();
