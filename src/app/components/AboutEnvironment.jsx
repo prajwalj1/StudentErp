@@ -53,22 +53,22 @@ const testimonials = [
     name: "Dr. Sameer Pathak",
     role: "Parent",
     comment: "The practical approach to science here is amazing. My son doesn't just read about experiments; he performs them in the advanced labs every week.",
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150&h=150",
+    image: "images/comment.jpg",
     rating: 5
   },
   {
     name: "Anjali Sharma",
     role: "Grade 10 Student",
     comment: "We learn through projects and field trips. This practical way of studying makes complex theories very easy to understand and remember.",
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=150&h=150",
+    image: "images/comment.jpg",
     rating: 5
   },
   {
     name: "Rajesh Hamal",
     role: "Alumni",
     comment: "The coding workshops and robotics club gave me a head start in my engineering career. The school focus on industry-relevant skills is commendable.",
-    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150&h=150",
-    rating: 5
+     image: "images/comment.jpg",
+     rating: 4
   },
   {
     name: "Sunita Gurung",
