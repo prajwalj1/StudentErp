@@ -65,8 +65,8 @@ export default function MyClassesPage() {
   const showToast = (type, text) => setToast({ type, text });
 
   useEffect(() => {
-    if (status === 'unauthenticated') router.replace('/login');
-  }, [status, router]);
+    if (status === 'unauthenticated' || (session && session.user.role !== 'TEACHER')) router.replace('/login');
+  }, [status, session, router]);
 
   useEffect(() => {
     if (status === 'authenticated') fetchData();

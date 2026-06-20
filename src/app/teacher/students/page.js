@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { PlusIcon, UserIcon, AcademicCapIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { NepaliDatePicker } from 'react-bs-calender';
 import 'react-bs-calender/styles.css';
 
 export default function TeacherStudentsPage() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [students, setStudents] = useState([]);
   const [myGrades, setMyGrades] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,10 +22,16 @@ export default function TeacherStudentsPage() {
   const [detailStudent, setDetailStudent] = useState(null);
 
   useEffect(() => {
-    if (status === 'authenticated') {
+    if (status === 'unauthenticated' || (session && session.user.role !== 'TEACHER')) {
+      router.replace('/login');
+    }
+  }, [status, session, router]);
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'TEACHER') {
       fetchStudents();
     }
-  }, [status]);
+  }, [status, session]);
 
   useEffect(() => {
     if (myGrades.length > 0 && !formData.grade) {
