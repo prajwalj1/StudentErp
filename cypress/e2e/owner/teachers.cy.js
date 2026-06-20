@@ -6,7 +6,7 @@ describe("Owner Teachers Page", () => {
 
   it("displays teachers list", () => {
     cy.contains("Teachers").should("be.visible");
-    cy.contains("Manage teaching staff accounts.").should("be.visible");
+    cy.contains("teaching staff members").should("be.visible");
   });
 
   it("has Add Teacher button that opens modal", () => {
@@ -26,8 +26,9 @@ describe("Owner Teachers Page", () => {
   });
 
   it("shows teacher table with correct columns", () => {
-    cy.contains("Teacher Name").should("be.visible");
-    cy.contains("Email / ID").should("be.visible");
+    cy.contains("Teacher").should("be.visible");
+    cy.contains("Email").should("be.visible");
+    cy.contains("Teacher ID").should("be.visible");
     cy.contains("Actions").should("be.visible");
   });
 });

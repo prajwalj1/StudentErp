@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useState, useEffect, useRef } from 'react';
+import { useSession, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { MegaphoneIcon } from '@heroicons/react/24/outline';
 import { toNepaliDate } from '@/lib/nepaliDate';
@@ -11,6 +11,14 @@ export default function TeacherNotices() {
   const router = useRouter();
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const sessionKicked = useRef(false);
+
+  useEffect(() => {
+    if (!sessionKicked.current) {
+      sessionKicked.current = true;
+      getSession();
+    }
+  }, []);
 
   useEffect(() => {
     if (status === 'unauthenticated' || (session && session.user.role !== 'TEACHER')) {

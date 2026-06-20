@@ -1,20 +1,58 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
-import { 
-  PlusIcon, 
-  MagnifyingGlassIcon, 
-  BookOpenIcon, 
-  ClockIcon, 
-  MapPinIcon, 
-  UserIcon, 
-  TrashIcon,
-  AcademicCapIcon
+import { useRouter } from 'next/navigation';
+import {
+  PlusIcon, XMarkIcon, BookOpenIcon, ClockIcon,
+  MapPinIcon, UserIcon, TrashIcon, AcademicCapIcon,
+  BuildingLibraryIcon, MagnifyingGlassIcon,
+  ExclamationTriangleIcon, CheckCircleIcon,
 } from '@heroicons/react/24/outline';
 
-const OwnerClassesPage = () => {
+const GRADES = ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
+
+function Badge({ children, color = 'slate' }) {
+  const colors = {
+    slate: 'bg-slate-100 text-slate-600', emerald: 'bg-emerald-100 text-emerald-700',
+    amber: 'bg-amber-100 text-amber-700', red: 'bg-red-100 text-red-700',
+    indigo: 'bg-indigo-100 text-indigo-700', purple: 'bg-purple-100 text-purple-700',
+    blue: 'bg-blue-100 text-blue-700',
+  };
+  return <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${colors[color]}`}>{children}</span>;
+}
+
+function StatBox({ icon: Icon, label, value, color }) {
+  const colors = { indigo: 'from-indigo-500 to-purple-600', emerald: 'from-emerald-500 to-emerald-600', amber: 'from-amber-500 to-amber-600', blue: 'from-blue-500 to-blue-600', purple: 'from-purple-500 to-pink-500' };
+  return (
+    <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100 flex items-center gap-3">
+      <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${colors[color] || colors.indigo} text-white shadow-sm`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{label}</p>
+        <p className="text-lg font-extrabold text-slate-900">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function Toast({ toast, onClose }) {
+  useEffect(() => { if (toast) { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); } }, [toast, onClose]);
+  if (!toast) return null;
+  return (
+    <div className={`fixed bottom-6 right-6 z-[200] flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-2xl animate-[slideUp_0.3s_ease-out] ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`}>
+      {toast.type === 'success' ? <CheckCircleIcon className="h-5 w-5" /> : <ExclamationTriangleIcon className="h-5 w-5" />}
+      {toast.text}
+    </div>
+  );
+}
+
+const INIT_FORM = { subject: '', grade: 'Grade 10', section: 'A', time: '10:00 AM - 11:00 AM', room: 'Room 101', teacherId: '' };
+
+export default function OwnerClassesPage() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [classes, setClasses] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,386 +60,295 @@ const OwnerClassesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [toast, setToast] = useState(null);
   const [selectedGrade, setSelectedGrade] = useState('All');
-  const [formData, setFormData] = useState({
-    subject: '',
-    grade: 'Grade 10',
-    section: 'A',
-    time: '10:00 AM - 11:00 AM',
-    room: 'Room 101',
-    teacherId: ''
-  });
+  const [formData, setFormData] = useState({ ...INIT_FORM });
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      fetchData();
-    }
+    if (status === 'unauthenticated') router.replace('/login');
+  }, [status, router]);
+
+  useEffect(() => {
+    if (status === 'authenticated') fetchData();
   }, [status]);
+
+  const showToast = (type, text) => { setToast({ type, text }); };
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const [classesRes, teachersRes] = await Promise.all([
         fetch('/api/classes'),
-        fetch('/api/teachers')
+        fetch('/api/teachers'),
       ]);
-
       if (classesRes.ok && teachersRes.ok) {
         const classesData = await classesRes.json();
         const teachersData = await teachersRes.json();
         setClasses(classesData);
         setTeachers(teachersData);
-        if (teachersData.length > 0) {
+        if (teachersData.length > 0 && !formData.teacherId) {
           setFormData(prev => ({ ...prev, teacherId: teachersData[0]._id }));
         }
       }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.error(e) } finally { setLoading(false); }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      const res = await fetch(`/api/classes/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        fetchData();
-      } else {
-        const errData = await res.json();
-        alert(`Failed to delete class: ${errData.error || 'Unknown error'}`);
-      }
-    } catch (error) {
-      console.error("Error deleting class:", error);
-    }
+      const res = await fetch(`/api/classes/${deleteTarget}`, { method: 'DELETE' });
+      if (res.ok) { setDeleteTarget(null); fetchData(); showToast('success', 'Class schedule deleted.'); }
+      else { const err = await res.json(); showToast('error', err.error || 'Delete failed.'); }
+    } catch { showToast('error', 'Network error.'); }
+    finally { setDeleting(false); }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.teacherId) {
-      alert("Please select a teacher. If no teachers exist, please add a teacher first.");
-      return;
-    }
-
+    if (!formData.teacherId) { showToast('error', 'Please select a teacher.'); return; }
     try {
       const res = await fetch('/api/classes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData),
       });
       if (res.ok) {
         setShowAddModal(false);
-        setFormData({
-          subject: '',
-          grade: 'Grade 10',
-          section: 'A',
-          time: '10:00 AM - 11:00 AM',
-          room: 'Room 101',
-          teacherId: teachers.length > 0 ? teachers[0]._id : ''
-        });
+        setFormData({ ...INIT_FORM, teacherId: teachers.length > 0 ? teachers[0]._id : '' });
         fetchData();
-        setToast({ type: 'success', text: 'Class schedule added successfully!' });
-        setTimeout(() => setToast(null), 3000);
-      } else {
-        const errData = await res.json();
-        setToast({ type: 'error', text: errData.error || 'Failed to add class.' });
-        setTimeout(() => setToast(null), 3000);
-      }
-    } catch (error) {
-      console.error("Error adding class:", error);
-      alert("Network error: Could not reach the server.");
-    }
+        showToast('success', 'Class schedule added!');
+      } else { const err = await res.json(); showToast('error', err.error || 'Failed to add class.'); }
+    } catch { showToast('error', 'Network error.'); }
   };
 
-  // Filter classes based on search term and selected grade
-  const filteredClasses = classes.filter(cls => {
-    const matchesSearch = cls.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (cls.teacherId?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (cls.room || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesGrade = selectedGrade === 'All' || cls.grade === selectedGrade;
-    return matchesSearch && matchesGrade;
-  });
+  const filteredClasses = useMemo(() => classes.filter(cls => {
+    const q = searchTerm.toLowerCase();
+    return (cls.subject.toLowerCase().includes(q) ||
+            (cls.teacherId?.name || '').toLowerCase().includes(q) ||
+            (cls.room || '').toLowerCase().includes(q)) &&
+           (selectedGrade === 'All' || cls.grade === selectedGrade);
+  }), [classes, searchTerm, selectedGrade]);
 
-  // Unique grades for filter dropdown
-  const uniqueGrades = ['All', ...new Set(classes.map(c => c.grade))];
+  const uniqueGrades = useMemo(() => ['All', ...new Set(classes.map(c => c.grade))], [classes]);
+  const activeTeachersCount = new Set(classes.map(c => c.teacherId?._id).filter(Boolean)).size;
+  const activeGradesCount = new Set(classes.map(c => c.grade)).size;
 
-  if (loading) {
-    return (
-      <div className="p-8 flex justify-center items-center min-h-[60vh]">
-        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-indigo-600 border-t-transparent" />
+    </div>
+  );
 
   return (
-    <div className="p-4 sm:p-8 space-y-6 max-w-7xl mx-auto">
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-3xl shadow-sm border border-slate-100 gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-            <BookOpenIcon className="w-8 h-8 text-indigo-600" />
-            Class Schedules & Assign
-          </h1>
-          <p className="text-slate-500 text-sm mt-1">Manage academic classes, rooms, time slots, and assigned teachers.</p>
-        </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-lg shadow-indigo-200 transition-all duration-300"
-        >
-          <PlusIcon className="w-5 h-5" />
-          Add Class Schedule
-        </button>
-      </div>
+    <div className="min-h-full bg-gradient-to-br from-slate-50/80 via-white to-indigo-50/20">
+      <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8">
 
-      {/* Stats Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4">
-          <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
-            <BookOpenIcon className="w-7 h-7" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Classes</p>
-            <h3 className="text-2xl font-black text-slate-900 mt-1">{classes.length}</h3>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4">
-          <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
-            <AcademicCapIcon className="w-7 h-7" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Grades</p>
-            <h3 className="text-2xl font-black text-slate-900 mt-1">
-              {new Set(classes.map(c => c.grade)).size}
-            </h3>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4">
-          <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600">
-            <UserIcon className="w-7 h-7" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Assigned Teachers</p>
-            <h3 className="text-2xl font-black text-slate-900 mt-1">
-              {new Set(classes.map(c => c.teacherId?._id).filter(Boolean)).size}
-            </h3>
-          </div>
-        </div>
-      </div>
-
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-        <div className="flex-1 relative">
-          <MagnifyingGlassIcon className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by subject, teacher name, or room..."
-            className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-slate-500 whitespace-nowrap px-2">Filter Grade:</span>
-          <select
-            value={selectedGrade}
-            onChange={(e) => setSelectedGrade(e.target.value)}
-            className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all"
-          >
-            {uniqueGrades.map(grade => (
-              <option key={grade} value={grade}>{grade}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Classes Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredClasses.length === 0 ? (
-          <div className="col-span-full py-16 text-center bg-white rounded-3xl border border-slate-100 shadow-sm">
-            <BookOpenIcon className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-slate-700">No class schedules found</h3>
-            <p className="text-slate-400 text-sm mt-1">Try adjusting your search query or add a new class schedule.</p>
-          </div>
-        ) : (
-          filteredClasses.map((cls) => (
-            <div 
-              key={cls._id} 
-              className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:border-indigo-100 transition-all duration-300 flex flex-col justify-between group"
-            >
+        {/* ─── Header ─── */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-5 sm:p-6 shadow-xl">
+          <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-indigo-500/10 blur-3xl" />
+          <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
+                <BookOpenIcon className="h-6 w-6 text-white" />
+              </div>
               <div>
-                <div className="flex justify-between items-start mb-4">
+                <h1 className="text-xl font-black text-white">Class Schedules</h1>
+                <p className="text-xs text-slate-400">{classes.length} classes across {activeGradesCount} grades</p>
+              </div>
+            </div>
+            <button onClick={() => setShowAddModal(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-indigo-900/30 transition-all hover:bg-indigo-700">
+              <PlusIcon className="h-4 w-4" />
+              Add Class
+            </button>
+          </div>
+        </div>
+
+        {/* ─── Stats Row ─── */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatBox icon={BookOpenIcon} label="Total Classes" value={classes.length} color="indigo" />
+          <StatBox icon={BuildingLibraryIcon} label="Active Grades" value={activeGradesCount} color="purple" />
+          <StatBox icon={UserIcon} label="Assigned Teachers" value={activeTeachersCount} color="blue" />
+          <StatBox icon={AcademicCapIcon} label="Filtered" value={`${filteredClasses.length}`} color="amber" />
+        </div>
+
+        {/* ─── Search & Filter ─── */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[200px]">
+            <MagnifyingGlassIcon className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+              placeholder="Search by subject, teacher, or room..."
+              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium text-slate-700 outline-none transition-all placeholder:text-slate-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+          </div>
+          <select value={selectedGrade} onChange={e => setSelectedGrade(e.target.value)}
+            className="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-600 outline-none transition-all focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 cursor-pointer">
+            {uniqueGrades.map(g => <option key={g} value={g}>{g === 'All' ? 'All Grades' : g}</option>)}
+          </select>
+          {searchTerm && <button onClick={() => setSearchTerm('')}
+            className="rounded-xl bg-slate-100 px-3.5 py-2.5 text-xs font-bold text-slate-500 transition-all hover:bg-slate-200">Clear</button>}
+        </div>
+
+        {/* ─── Classes Grid ─── */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {filteredClasses.length === 0 ? (
+            <div className="col-span-full rounded-2xl border border-slate-200 bg-white p-12 text-center">
+              <BookOpenIcon className="mx-auto h-10 w-10 text-slate-300" />
+              <p className="mt-3 text-sm font-bold text-slate-500">No class schedules found</p>
+              <p className="text-xs text-slate-400 mt-1">{searchTerm || selectedGrade !== 'All' ? 'Try adjusting your filters.' : 'Click "Add Class" to get started.'}</p>
+            </div>
+          ) : filteredClasses.map((cls) => (
+            <div key={cls._id} className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500" />
+              <div className="p-5">
+                <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center font-black text-lg group-hover:scale-110 transition-transform duration-300 shadow-inner">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-lg font-bold text-white shadow-sm">
                       {cls.subject.charAt(0)}
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{cls.subject}</h3>
-                      <span className="inline-block px-2.5 py-0.5 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg mt-1">
-                        {cls.grade} {cls.section ? `• Sec ${cls.section}` : ''}
-                      </span>
+                      <h3 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{cls.subject}</h3>
+                      <Badge color="indigo">{cls.grade}{cls.section ? ` • ${cls.section}` : ''}</Badge>
                     </div>
                   </div>
-                  <button 
-                    onClick={() => handleDelete(cls._id)}
-                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                    title="Delete Class"
-                  >
-                    <TrashIcon className="w-5 h-5" />
+                  <button onClick={() => setDeleteTarget(cls._id)}
+                    className="rounded-lg p-1.5 text-slate-300 transition-all hover:bg-red-50 hover:text-red-500 opacity-0 group-hover:opacity-100" title="Delete">
+                    <TrashIcon className="h-4 w-4" />
                   </button>
                 </div>
 
-                <div className="space-y-3 py-4 border-t border-b border-slate-50 my-4">
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <ClockIcon className="w-5 h-5 text-indigo-500 flex-shrink-0" />
+                <div className="my-4 space-y-2.5 border-y border-slate-50 py-3.5 text-xs">
+                  <div className="flex items-center gap-2.5 text-slate-600">
+                    <ClockIcon className="h-4 w-4 text-indigo-400 shrink-0" />
                     <span className="font-medium">{cls.time}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <MapPinIcon className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                  <div className="flex items-center gap-2.5 text-slate-600">
+                    <MapPinIcon className="h-4 w-4 text-emerald-400 shrink-0" />
                     <span className="font-medium">{cls.room || 'Unassigned Room'}</span>
                   </div>
                 </div>
-              </div>
 
-              <div className="pt-2 flex items-center gap-3 bg-slate-50/70 p-3 rounded-2xl border border-slate-100">
-                <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm flex-shrink-0">
-                  {cls.teacherId?.name ? cls.teacherId.name.charAt(0) : '?'}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Assigned Teacher</p>
-                  <p className="text-sm font-bold text-slate-800 truncate">{cls.teacherId?.name || 'No Teacher Assigned'}</p>
+                <div className="flex items-center gap-2.5 rounded-xl bg-slate-50 p-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-xs font-bold text-white shadow-sm shrink-0">
+                    {cls.teacherId?.name ? cls.teacherId.name.charAt(0) : '?'}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Teacher</p>
+                    <p className="text-xs font-bold text-slate-800 truncate">{cls.teacherId?.name || 'No Teacher Assigned'}</p>
+                  </div>
                 </div>
               </div>
             </div>
-          ))
-        )}
+          ))}
+        </div>
       </div>
 
-      {/* Add Class Schedule Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-float my-8">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <BookOpenIcon className="w-6 h-6 text-indigo-600" />
-                Add New Class Schedule
-              </h2>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-200/50 transition-all">
-                <PlusIcon className="w-6 h-6 rotate-45" />
+      {/* ─── Delete Modal ─── */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4" onClick={() => setDeleteTarget(null)}>
+          <div className="w-full max-w-sm animate-[zoomIn_0.2s_ease-out] rounded-2xl bg-white p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
+                <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">Delete Schedule?</h3>
+              <p className="mt-1 text-sm text-slate-500">This class schedule will be permanently removed.</p>
+            </div>
+            <div className="mt-6 flex gap-3">
+              <button onClick={() => setDeleteTarget(null)} disabled={deleting}
+                className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50 disabled:opacity-50">Cancel</button>
+              <button onClick={handleDelete} disabled={deleting}
+                className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:bg-red-700 disabled:opacity-50">
+                {deleting ? 'Deleting...' : 'Yes, Delete'}
               </button>
             </div>
-            
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Subject Name</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.subject}
-                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 focus:bg-white outline-none transition-all text-sm font-medium"
-                  placeholder="e.g. Advanced Mathematics, Physics, English"
-                />
-              </div>
+          </div>
+        </div>
+      )}
 
+      {/* ─── Add Modal ─── */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4" onClick={() => setShowAddModal(false)}>
+          <div className="w-full max-w-lg animate-[zoomIn_0.2s_ease-out] rounded-2xl bg-white shadow-2xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 shrink-0">
+              <div className="flex items-center gap-2">
+                <BookOpenIcon className="h-5 w-5 text-indigo-600" />
+                <h2 className="text-base font-bold text-slate-900">Add Class Schedule</h2>
+              </div>
+              <button onClick={() => setShowAddModal(false)}
+                className="rounded-xl p-1.5 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="overflow-y-auto p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Grade</label>
-                  <select
-                    value={formData.grade}
-                    onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 focus:bg-white outline-none transition-all text-sm font-semibold text-slate-700"
-                  >
-                    {['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'].map(g => (
-                      <option key={g} value={g}>{g}</option>
-                    ))}
+                  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Subject <span className="text-red-400">*</span></label>
+                  <input type="text" required value={formData.subject} onChange={e => setFormData(p => ({ ...p, subject: e.target.value }))}
+                    placeholder="e.g. Mathematics"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all placeholder:text-slate-300 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Grade <span className="text-red-400">*</span></label>
+                  <select required value={formData.grade} onChange={e => setFormData(p => ({ ...p, grade: e.target.value }))}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 cursor-pointer">
+                    {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Section</label>
-                  <input
-                    type="text"
-                    value={formData.section}
-                    onChange={(e) => setFormData({ ...formData, section: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 focus:bg-white outline-none transition-all text-sm font-medium"
-                    placeholder="e.g. A, B, Rose"
-                  />
-                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Schedule Time</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.time}
-                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 focus:bg-white outline-none transition-all text-sm font-medium"
-                    placeholder="e.g. 10:00 AM - 11:00 AM"
-                  />
+                  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Section</label>
+                  <input type="text" value={formData.section} onChange={e => setFormData(p => ({ ...p, section: e.target.value }))}
+                    placeholder="e.g. A, B"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all placeholder:text-slate-300 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100" />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Room Number</label>
-                  <input
-                    type="text"
-                    value={formData.room}
-                    onChange={(e) => setFormData({ ...formData, room: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 focus:bg-white outline-none transition-all text-sm font-medium"
-                    placeholder="e.g. Room 101, Science Lab"
-                  />
+                  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Room</label>
+                  <input type="text" value={formData.room} onChange={e => setFormData(p => ({ ...p, room: e.target.value }))}
+                    placeholder="e.g. Room 101"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all placeholder:text-slate-300 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Assign Teacher</label>
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Time Slot <span className="text-red-400">*</span></label>
+                <input type="text" required value={formData.time} onChange={e => setFormData(p => ({ ...p, time: e.target.value }))}
+                  placeholder="e.g. 10:00 AM - 11:00 AM"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all placeholder:text-slate-300 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100" />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Assign Teacher <span className="text-red-400">*</span></label>
                 {teachers.length === 0 ? (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-semibold">
-                    No teachers available. Please add a teacher from the Teachers portal first.
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+                    No teachers available. Add one from the Teachers portal first.
                   </div>
                 ) : (
-                  <select
-                    required
-                    value={formData.teacherId}
-                    onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 focus:bg-white outline-none transition-all text-sm font-semibold text-slate-700"
-                  >
-                    {teachers.map(teacher => (
-                      <option key={teacher._id} value={teacher._id}>
-                        {teacher.name} ({teacher.teacherId || teacher.email})
-                      </option>
-                    ))}
+                  <select required value={formData.teacherId} onChange={e => setFormData(p => ({ ...p, teacherId: e.target.value }))}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 cursor-pointer">
+                    {teachers.map(t => <option key={t._id} value={t._id}>{t.name} ({t.teacherId || t.email})</option>)}
                   </select>
                 )}
               </div>
 
-              <div className="pt-4 flex gap-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition-all text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={teachers.length === 0}
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Save Schedule
-                </button>
+              <div className="flex gap-3 border-t border-slate-100 pt-4">
+                <button type="button" onClick={() => setShowAddModal(false)}
+                  className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50">Cancel</button>
+                <button type="submit" disabled={teachers.length === 0}
+                  className="flex-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-200 transition-all hover:bg-indigo-700 disabled:opacity-50">Save Schedule</button>
               </div>
             </form>
           </div>
         </div>
       )}
-      {toast && (
-        <div className={`fixed bottom-6 right-6 z-[200] px-6 py-3 rounded-2xl shadow-2xl text-sm font-bold text-white transition-all animate-float ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`}>
-          {toast.text}
-        </div>
-      )}
+
+      {/* ─── Toast ─── */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
+
+      <style jsx>{`
+        @keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
     </div>
   );
-};
-
-export default OwnerClassesPage;
+}

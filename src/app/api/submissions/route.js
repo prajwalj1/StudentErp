@@ -5,6 +5,7 @@ import dbConnect from "@/lib/mongodb";
 import Submission from "@/models/Submission";
 import Assignment from "@/models/Assignment";
 import Student from "@/models/Student";
+import Notification from "@/models/Notification";
 
 export async function GET(req) {
   try {
@@ -90,12 +91,20 @@ export async function POST(req) {
 
     let submission;
     if (existing) {
-      submission = await Submission.findByIdAndUpdate(existing._id, subData, { new: true });
-    } else {
-      submission = await Submission.create(subData);
+      await Submission.findByIdAndDelete(existing._id);
+    }
+    submission = await Submission.create(subData);
+    if (!existing) {
+      await Assignment.findByIdAndUpdate(assignmentId, { $inc: { submissions: 1 } });
     }
 
-    await Assignment.findByIdAndUpdate(assignmentId, { $inc: { submissions: 1 } });
+    const student = await Student.findById(session.user.id).select("name grade").lean();
+    await Notification.create({
+      recipientRole: "TEACHER",
+      recipientId: assignment.teacherId,
+      message: `${student?.name || "A student"} submitted "${assignment.title}"`,
+      link: "/teacher/assignments",
+    });
 
     return NextResponse.json(submission, { status: 201 });
   } catch (err) {
@@ -123,9 +132,26 @@ export async function PATCH(req) {
     if (body.feedback !== undefined) update.feedback = body.feedback;
     if (body.status) update.status = body.status;
 
-    const sub = await Submission.findByIdAndUpdate(subId, update, { new: true });
-    if (!sub) {
+    const prevSub = await Submission.findById(subId).select('assignmentId status').lean();
+    if (!prevSub) {
       return NextResponse.json({ error: "Submission not found" }, { status: 404 });
+    }
+
+    const sub = await Submission.findByIdAndUpdate(subId, update, { new: true });
+
+    if (body.status === 'returned' && prevSub.status !== 'returned') {
+      await Assignment.findByIdAndUpdate(prevSub.assignmentId, { $inc: { submissions: -1 } });
+    }
+
+    if (body.status === 'graded' || body.status === 'returned') {
+      const asgn = await Assignment.findById(prevSub.assignmentId).select("title").lean();
+      const verb = body.status === 'graded' ? "graded" : "returned";
+      await Notification.create({
+        recipientRole: "STUDENT",
+        recipientId: prevSub.studentId,
+        message: `Your assignment "${asgn?.title || "Untitled"}" has been ${verb}${body.status === 'graded' ? ` (${body.grade}/100)` : ""}`,
+        link: "/student/assignments",
+      });
     }
 
     return NextResponse.json(sub);

@@ -16,13 +16,11 @@ describe("Login Page", () => {
       body: { ok: false, error: "CredentialsSignin", url: "http://localhost:3000/login?error=CredentialsSignin" },
     }).as("failedLogin");
 
-    cy.window().then((win) => {
-      cy.stub(win, "alert").as("alertStub");
-    });
     cy.getByPlaceholder("Enter email or ID").type("wrong@email.com");
     cy.getByPlaceholder("Enter password").type("wrongpass");
     cy.get('button[type="submit"]').click();
-    cy.get("@alertStub").should("have.been.calledWith", "Invalid credentials. Please try again.");
+    cy.wait("@failedLogin");
+    cy.contains("Invalid credentials. Please try again.").should("be.visible");
   });
 
   it("displays the school branding on left panel", () => {

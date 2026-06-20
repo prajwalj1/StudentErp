@@ -18,8 +18,8 @@ describe("Shared Layout Components", () => {
     cy.visit("/");
     cy.scrollTo("bottom");
     cy.contains("Everest View ERP").should("be.visible");
-    cy.contains("Product").should("be.visible");
-    cy.contains("Company").should("be.visible");
+    cy.contains("For Students").should("be.visible");
+    cy.contains("For Teachers").should("be.visible");
     cy.contains("Stay Updated").should("be.visible");
   });
 
@@ -48,6 +48,6 @@ describe("Shared Layout Components", () => {
     cy.visit("/");
     cy.scrollTo("bottom");
     cy.getByPlaceholder("Email address").should("exist");
-    cy.contains("Join").should("exist");
+    cy.contains("Subscribe").should("exist");
   });
 });

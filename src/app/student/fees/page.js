@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { CurrencyDollarIcon, CheckCircleIcon, XCircleIcon, PrinterIcon } from '@heroicons/react/24/outline';
+import { CurrencyDollarIcon, CheckCircleIcon, XCircleIcon, PrinterIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { toNepaliDate, getNepaliYear } from '@/lib/nepaliDate';
 
 function FeesContent() {
@@ -16,6 +16,7 @@ function FeesContent() {
 
   const [feeData, setFeeData] = useState(null);
   const [classFee, setClassFee] = useState(null);
+  const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [payAmount, setPayAmount] = useState('');
@@ -32,39 +33,27 @@ function FeesContent() {
   }, [paymentStatus]);
 
   useEffect(() => {
-    if (status === 'unauthenticated' || (session && session.user.role !== 'STUDENT')) {
-      router.push('/login');
-    }
+    if (status === 'unauthenticated' || (session && session.user.role !== 'STUDENT')) router.push('/login');
   }, [status, session, router]);
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.role === 'STUDENT') {
-      fetch('/api/fees')
-        .then(r => r.json())
-        .then(fees => {
-          if (fees?.student) setFeeData(fees.student);
-          if (fees?.classFee) setClassFee(fees.classFee);
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
+      fetch('/api/fees').then(r => r.json()).then(fees => {
+        if (fees?.student) setFeeData(fees.student);
+        if (fees?.classFee) setClassFee(fees.classFee);
+        if (fees?.payments) setPayments(fees.payments);
+        setLoading(false);
+      }).catch(() => setLoading(false));
     }
   }, [status, session]);
 
-  useEffect(() => {
-    if (esewaForm && formRef.current) {
-      formRef.current.submit();
-    }
-  }, [esewaForm]);
+  useEffect(() => { if (esewaForm && formRef.current) formRef.current.submit(); }, [esewaForm]);
 
   const handlePay = async () => {
     const amount = payMode === 'full' ? feeData?.dueAmount : Number(payAmount);
     if (!amount || amount <= 0) return;
-    if (amount > (feeData?.dueAmount || 0)) {
-      setMessage({ type: 'error', text: 'Amount cannot exceed due amount.' });
-      return;
-    }
-    setPaying(true);
-    setMessage(null);
+    if (amount > (feeData?.dueAmount || 0)) { setMessage({ type: 'error', text: 'Amount cannot exceed due amount.' }); return; }
+    setPaying(true); setMessage(null);
     try {
       const res = await fetch('/api/esewa/initiate', {
         method: 'POST',
@@ -72,20 +61,9 @@ function FeesContent() {
         body: JSON.stringify({ amount }),
       });
       const data = await res.json();
-      if (!data.success) {
-        setMessage({ type: 'error', text: data.error || 'Failed to initiate payment.' });
-        setPaying(false);
-        return;
-      }
+      if (!data.success) { setMessage({ type: 'error', text: data.error || 'Failed to initiate payment.' }); setPaying(false); return; }
       setEsewaForm(data);
-    } catch {
-      setMessage({ type: 'error', text: 'Connection error. Please try again.' });
-      setPaying(false);
-    }
-  };
-
-  const handlePrint = () => {
-    window.print();
+    } catch { setMessage({ type: 'error', text: 'Connection error.' }); setPaying(false); }
   };
 
   const today = new Date();
@@ -102,147 +80,142 @@ function FeesContent() {
     });
   }
 
-  if (status === 'loading' || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+  if (status === 'loading' || loading) return (
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-emerald-600 border-t-transparent" />
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-2 pb-12 px-4 sm:px-6 lg:px-8">
-      <style>{`
-        @media print {
-          body * { visibility: hidden; }
-          #fee-bill, #fee-bill * { visibility: visible; }
-          #fee-bill { position: absolute; left: 0; top: 0; width: 100%; }
-          .no-print { display: none !important; }
-        }
-      `}</style>
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-full bg-gradient-to-br from-slate-50/80 via-white to-emerald-50/20">
+      <div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-6 lg:p-8">
+
+        {/* ─── Header (no-print) ─── */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-900 p-5 sm:p-6 shadow-xl no-print">
+          <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-emerald-400/10 blur-3xl" />
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
+                <CurrencyDollarIcon className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-black text-white">Fee Details</h1>
+                <p className="text-xs text-emerald-200">View fee structure and make payments</p>
+              </div>
+            </div>
+            <button onClick={() => window.print()}
+              className="flex items-center gap-2 rounded-xl bg-white/10 backdrop-blur-sm px-5 py-2.5 text-xs font-bold text-white transition-all hover:bg-white/20">
+              <PrinterIcon className="h-4 w-4" />
+              Print Bill
+            </button>
+          </div>
+        </div>
+
+        {/* ─── Message Banner ─── */}
         {message && (
-          <div className={`mb-4 flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-semibold ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
-            {message.type === 'success' ? <CheckCircleIcon className="w-5 h-5 shrink-0" /> : <XCircleIcon className="w-5 h-5 shrink-0" />}
+          <div className={`flex items-center gap-3 rounded-2xl border px-5 py-4 text-sm font-bold ${message.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'} no-print`}>
+            {message.type === 'success' ? <CheckCircleIcon className="h-5 w-5 shrink-0" /> : <XCircleIcon className="h-5 w-5 shrink-0" />}
             {message.text}
             <button onClick={() => setMessage(null)} className="ml-auto text-slate-400 hover:text-slate-600">&times;</button>
           </div>
         )}
 
+        {/* ─── Fee Bill ─── */}
         {classFee ? (
-          <div>
-            <div className="flex justify-end mb-2">
-              <button
-                onClick={handlePrint}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg transition-all no-print">
-                <PrinterIcon className="w-4 h-4" />
-                Print / Download Bill
-              </button>
-            </div>
-            <div id="fee-bill" ref={billRef} className="bg-white border-2 border-slate-200 shadow-sm overflow-hidden">
-            {/* School Header */}
-            <div className="text-center pt-6 pb-4 px-6 border-b-2 border-slate-200">
-              <div className="flex justify-center mb-3">
-                <img src="/images/logo.png" alt="School Logo"
-                  className="w-16 h-16 object-contain"
-                  onError={e => { e.target.style.display = 'none'; }} />
-              </div>
-              <h1 className="text-xl font-black text-red-700 uppercase tracking-wider">Everest View Secondary Boarding School</h1>
-              <p className="text-xs text-slate-500 mt-1">Mechinagar-7, Jhapa, Nepal &middot; Phone: 023-562430 &middot; Email: info@everestview.edu.np</p>
-            </div>
-
-            {/* Bill Title */}
-            <div className="text-center py-3 bg-red-50 border-b border-slate-200">
-              <h2 className="text-base font-black text-red-700 uppercase tracking-widest">School Fee Bill</h2>
-              <p className="text-[10px] text-slate-500 font-semibold mt-0.5">Academic Session {getNepaliYear(today)}</p>
-            </div>
-
-            {/* Bill Info Row */}
-            <div className="px-6 py-3 border-b border-slate-200 flex justify-between items-center text-xs">
-              <div className="flex gap-8">
-                <div>
-                  <span className="text-slate-400 font-semibold">Bill No:</span>
-                  <span className="ml-1.5 font-bold text-slate-800 font-mono">{billNo || 'N/A'}</span>
+          <div id="fee-bill" ref={billRef}>
+            <div className="rounded-2xl border-2 border-slate-200 bg-white shadow-sm overflow-hidden">
+              {/* School Header */}
+              <div className="border-b-2 border-slate-200 px-6 pt-6 pb-4 text-center">
+                <div className="mb-3 flex justify-center">
+                  <img src="/images/logo.png" alt="School Logo" className="h-16 w-16 object-contain"
+                    onError={e => { e.target.style.display = 'none'; }} />
                 </div>
-                <div>
-                  <span className="text-slate-400 font-semibold">Date:</span>
-                  <span className="ml-1.5 font-bold text-slate-800">{toNepaliDate(today)}</span>
-                </div>
+                <h1 className="text-xl font-black uppercase tracking-wider text-red-700">Everest View Secondary Boarding School</h1>
+                <p className="mt-1 text-xs text-slate-500">Mechinagar-7, Jhapa, Nepal &middot; Phone: 023-562430 &middot; Email: info@everestview.edu.np</p>
               </div>
-              <span className="font-bold text-red-600">{classFee.grade}</span>
-            </div>
 
-            {/* Student Details */}
-            <div className="px-6 py-3 border-b border-slate-200 bg-slate-50/50">
-              <table className="w-full text-xs">
-                <tbody>
-                  <tr>
-                    <td className="py-1 text-slate-400 font-semibold w-28">Student Name:</td>
-                    <td className="py-1 font-bold text-slate-900">{session?.user?.name}</td>
-                    <td className="py-1 text-slate-400 font-semibold w-24">Student ID:</td>
-                    <td className="py-1 font-bold text-slate-900">{session?.user?.studentId || '-'}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-1 text-slate-400 font-semibold">Grade/Class:</td>
-                    <td className="py-1 font-bold text-slate-900">{classFee.grade}</td>
-                    <td className="py-1 text-slate-400 font-semibold">Session:</td>
-                    <td className="py-1 font-bold text-slate-900">{getNepaliYear(today)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+              {/* Bill Title */}
+              <div className="border-b border-slate-200 bg-red-50 py-3 text-center">
+                <h2 className="text-base font-black uppercase tracking-widest text-red-700">School Fee Bill</h2>
+                <p className="mt-0.5 text-[10px] font-semibold text-slate-500">Academic Session {getNepaliYear(today)}</p>
+              </div>
 
-            {/* Fee Table */}
-            <div className="px-6 py-5">
-              <table className="w-full border-collapse border border-slate-200 text-sm">
-                <thead>
-                  <tr className="bg-red-50">
-                    <th className="border border-slate-200 px-3 py-2 text-[10px] font-bold text-red-800 uppercase tracking-wider w-12 text-center">S.No</th>
-                    <th className="border border-slate-200 px-3 py-2 text-[10px] font-bold text-red-800 uppercase tracking-wider">Particulars / Fee Category</th>
-                    <th className="border border-slate-200 px-3 py-2 text-[10px] font-bold text-red-800 uppercase tracking-wider text-right w-32">Amount (Rs.)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(categoryTotals).map(([name, total], i) => (
-                    <tr key={name} className="hover:bg-slate-50">
-                      <td className="border border-slate-200 px-3 py-2 text-xs text-slate-400 text-center font-mono">{String(i + 1).padStart(2, '0')}</td>
-                      <td className="border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">{name}</td>
-                      <td className="border border-slate-200 px-3 py-2 text-sm font-bold text-slate-900 text-right">Rs. {total.toLocaleString()}</td>
+              {/* Bill Info */}
+              <div className="flex items-center justify-between border-b border-slate-200 px-6 py-3 text-xs">
+                <div className="flex gap-8">
+                  <div><span className="font-semibold text-slate-400">Bill No:</span><span className="ml-1.5 font-bold font-mono text-slate-800">{billNo || 'N/A'}</span></div>
+                  <div><span className="font-semibold text-slate-400">Date:</span><span className="ml-1.5 font-bold text-slate-800">{toNepaliDate(today)}</span></div>
+                </div>
+                <span className="font-bold text-red-600">{classFee.grade}</span>
+              </div>
+
+              {/* Student Details */}
+              <div className="border-b border-slate-200 bg-slate-50/50 px-6 py-3">
+                <table className="w-full text-xs">
+                  <tbody>
+                    <tr>
+                      <td className="w-28 py-1 font-semibold text-slate-400">Student Name:</td>
+                      <td className="py-1 font-bold text-slate-900">{session?.user?.name}</td>
+                      <td className="w-24 py-1 font-semibold text-slate-400">Student ID:</td>
+                      <td className="py-1 font-bold text-slate-900">{session?.user?.studentId || '-'}</td>
                     </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-red-50">
-                    <td colSpan="2" className="border border-slate-200 px-3 py-2.5 text-sm font-black text-red-800 text-right">Total Fee</td>
-                    <td className="border border-slate-200 px-3 py-2.5 text-base font-black text-red-700 text-right">Rs. {classFee.totalFee?.toLocaleString() || 0}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+                    <tr>
+                      <td className="py-1 font-semibold text-slate-400">Grade/Class:</td>
+                      <td className="py-1 font-bold text-slate-900">{classFee.grade}</td>
+                      <td className="py-1 font-semibold text-slate-400">Session:</td>
+                      <td className="py-1 font-bold text-slate-900">{getNepaliYear(today)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
-            {/* In Words & Payment Summary */}
-            <div className="px-6 pb-2">
-              <div className="grid grid-cols-2 gap-6">
+              {/* Fee Table */}
+              <div className="overflow-x-auto px-6 py-5">
+                <table className="w-full border-collapse border border-slate-200 text-sm" style={{ minWidth: '400px' }}>
+                  <thead>
+                    <tr className="bg-red-50">
+                      <th className="w-12 border border-slate-200 px-3 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-red-800">S.No</th>
+                      <th className="border border-slate-200 px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-red-800">Particulars / Fee Category</th>
+                      <th className="w-32 border border-slate-200 px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider text-red-800">Amount (Rs.)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(categoryTotals).map(([name, total], i) => (
+                      <tr key={name} className="hover:bg-slate-50">
+                        <td className="border border-slate-200 px-3 py-2 text-center text-xs font-mono text-slate-400">{String(i + 1).padStart(2, '0')}</td>
+                        <td className="border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">{name}</td>
+                        <td className="border border-slate-200 px-3 py-2 text-right text-sm font-bold text-slate-900">Rs. {total.toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-red-50">
+                      <td colSpan="2" className="border border-slate-200 px-3 py-2.5 text-right text-sm font-black text-red-800">Total Fee</td>
+                      <td className="border border-slate-200 px-3 py-2.5 text-right text-base font-black text-red-700">Rs. {classFee.totalFee?.toLocaleString() || 0}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              {/* In Words & Summary */}
+              <div className="grid grid-cols-2 gap-6 px-6 pb-2">
                 <div>
-                  <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-2">Amount in Words</p>
-                  <p className="text-xs font-medium text-slate-600 italic">
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Amount in Words</p>
+                  <p className="text-xs font-medium italic text-slate-600">
                     Rupees {classFee?.totalFee ? numberToWords(classFee.totalFee) : 'Zero'} Only
                   </p>
                 </div>
                 <div>
-                  <table className="w-full text-xs border-collapse">
+                    <table className="w-full border-collapse text-xs">
                     <tbody>
-                      <tr>
-                        <td className="py-1 text-slate-500">Total Fee:</td>
-                        <td className="py-1 font-bold text-slate-900 text-right">Rs. {classFee.totalFee?.toLocaleString() || 0}</td>
-                      </tr>
-                      <tr>
-                        <td className="py-1 text-emerald-600 font-semibold">Paid Amount:</td>
-                        <td className="py-1 font-bold text-emerald-600 text-right">- Rs. {feeData?.paidAmount?.toLocaleString() || 0}</td>
-                      </tr>
+                      <tr><td className="py-1 text-slate-500">Current Grade Fee:</td><td className="py-1 text-right font-bold text-slate-900">Rs. {classFee.totalFee?.toLocaleString() || 0}</td></tr>
+                      {(feeData?.previousDue || 0) > 0 && (
+                        <tr><td className="py-1 text-red-500 font-semibold">Previous Due:</td><td className="py-1 text-right font-bold text-red-500">+ Rs. {feeData.previousDue.toLocaleString()}</td></tr>
+                      )}
+                      <tr><td className="py-1 font-semibold text-emerald-600">Paid Amount:</td><td className="py-1 text-right font-bold text-emerald-600">- Rs. {feeData?.paidAmount?.toLocaleString() || 0}</td></tr>
                       <tr className="border-t border-slate-200">
                         <td className="pt-2 font-black text-slate-900">Balance Due:</td>
-                        <td className={`pt-2 font-black text-right ${(feeData?.dueAmount || 0) > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                        <td className={`pt-2 text-right font-black ${(feeData?.dueAmount || 0) > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
                           Rs. {feeData?.dueAmount?.toLocaleString() || 0}
                         </td>
                       </tr>
@@ -250,123 +223,110 @@ function FeesContent() {
                   </table>
                 </div>
               </div>
-            </div>
 
-            {/* Term-wise Details */}
-            {classFee.terms?.length > 0 && (
-              <div className="px-6 pb-4">
-                <details className="text-xs">
-                  <summary className="cursor-pointer text-slate-500 font-semibold hover:text-slate-700">
-                    View Term-wise Breakdown ({classFee.terms.length} terms)
-                  </summary>
-                  <div className="mt-2 space-y-2 pl-4">
-                    {classFee.terms.map((term, ti) => (
-                      <div key={ti}>
-                        <div className="flex justify-between items-center py-1 font-bold text-slate-700 border-b border-slate-200">
-                          <span>{term.name}</span>
-                          <span className="text-red-700">Rs. {term.totalFee?.toLocaleString() || 0}</span>
-                        </div>
-                        {term.categories?.map((cat, ci) => (
-                          <div key={ci} className="flex justify-between items-center py-0.5 text-slate-600 pl-3">
-                            <span>{cat.name}</span>
-                            <span>Rs. {cat.amount?.toLocaleString()}</span>
+              {/* Term Breakdown */}
+              {classFee.terms?.length > 0 && (
+                <div className="px-6 pb-4">
+                  <details className="text-xs">
+                    <summary className="cursor-pointer font-semibold text-slate-500 hover:text-slate-700">View Term-wise Breakdown ({classFee.terms.length} terms)</summary>
+                    <div className="mt-2 space-y-2 pl-4">
+                      {classFee.terms.map((term, ti) => (
+                        <div key={ti}>
+                          <div className="flex items-center justify-between border-b border-slate-200 py-1 font-bold text-slate-700">
+                            <span>{term.name}</span>
+                            <span className="text-red-700">Rs. {term.totalFee?.toLocaleString() || 0}</span>
                           </div>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              </div>
-            )}
-
-            {/* Signature Section */}
-            <div className="px-6 py-6 mt-2 border-t-2 border-slate-200">
-              <div className="flex justify-between items-end">
-                <div className="text-center">
-                  <div className="w-44 border-t border-slate-300 pt-2 mt-16">
-                    <p className="text-xs font-bold text-slate-700">Accountant</p>
-                    <p className="text-[10px] text-slate-400">Signature</p>
-                  </div>
+                          {term.categories?.map((cat, ci) => (
+                            <div key={ci} className="flex items-center justify-between py-0.5 pl-3 text-slate-600">
+                              <span>{cat.name}</span>
+                              <span>Rs. {cat.amount?.toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </details>
                 </div>
-                <div className="text-center">
-                  <div className="px-6 py-3 bg-red-50 border border-red-200 rounded">
+              )}
+
+              {/* Signature */}
+              <div className="mt-2 border-t-2 border-slate-200 px-6 py-6">
+                <div className="flex items-end justify-between">
+                  <div className="text-center">
+                    <div className="mt-16 w-44 border-t border-slate-300 pt-2">
+                      <p className="text-xs font-bold text-slate-700">Accountant</p>
+                      <p className="text-[10px] text-slate-400">Signature</p>
+                    </div>
+                  </div>
+                  <div className="rounded border border-red-200 bg-red-50 px-6 py-3">
                     <p className={`text-sm font-black ${(feeData?.dueAmount || 0) > 0 ? 'text-red-700' : 'text-emerald-700'}`}>
                       {(feeData?.dueAmount || 0) > 0 ? 'PAYABLE' : 'PAID'}
                     </p>
                   </div>
-                </div>
-                <div className="text-center">
-                  <div className="w-44 border-t border-slate-300 pt-2 mt-16">
-                    <p className="text-xs font-bold text-slate-700">Principal</p>
-                    <p className="text-[10px] text-slate-400">Signature</p>
+                  <div className="text-center">
+                    <div className="mt-16 w-44 border-t border-slate-300 pt-2">
+                      <p className="text-xs font-bold text-slate-700">Principal</p>
+                      <p className="text-[10px] text-slate-400">Signature</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Footer */}
-            <div className="px-6 py-3 border-t border-slate-200 text-center bg-slate-50">
-              <p className="text-[10px] text-slate-400 font-semibold">This is a computer-generated bill. All payments are tracked and verified.</p>
-              <p className="text-[10px] text-slate-400 font-semibold mt-0.5">&copy; {today.getFullYear()} Everest View Secondary Boarding School. All rights reserved.</p>
+              {/* Footer */}
+              <div className="border-t border-slate-200 bg-slate-50 px-6 py-3 text-center">
+                <p className="text-[10px] font-semibold text-slate-400">This is a computer-generated bill. All payments are tracked and verified.</p>
+                <p className="mt-0.5 text-[10px] font-semibold text-slate-400">&copy; {today.getFullYear()} Everest View Secondary Boarding School. All rights reserved.</p>
+              </div>
             </div>
           </div>
-        </div>
         ) : (
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 text-center">
-            <p className="text-slate-400 text-sm">No fee structure defined for your class.</p>
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <p className="text-sm text-slate-400">No fee structure defined for your class.</p>
           </div>
         )}
 
-        {/* Payment Section */}
+        {/* ─── eSewa Payment Section ─── */}
         {feeData && feeData.dueAmount > 0 && (
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 mt-6">
-            <h3 className="text-lg font-bold text-slate-900 mb-4">Pay via eSewa</h3>
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="flex items-center gap-2 text-base font-bold text-slate-900 mb-4">
+              <SparklesIcon className="h-5 w-5 text-emerald-500" />
+              Pay via eSewa
+            </h3>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="payMode" value="full" checked={payMode === 'full'} onChange={() => { setPayMode('full'); setPayAmount(''); }} className="accent-blue-600 w-4 h-4" />
-                  <span className="text-sm font-semibold text-slate-700">Full Payment</span>
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input type="radio" name="payMode" value="full" checked={payMode === 'full'} onChange={() => { setPayMode('full'); setPayAmount(''); }} className="h-4 w-4 accent-emerald-600" />
+                  <span className="text-xs font-bold text-slate-700">Full Payment</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="payMode" value="installment" checked={payMode === 'installment'} onChange={() => setPayMode('installment')} className="accent-blue-600 w-4 h-4" />
-                  <span className="text-sm font-semibold text-slate-700">Installment</span>
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input type="radio" name="payMode" value="installment" checked={payMode === 'installment'} onChange={() => setPayMode('installment')} className="h-4 w-4 accent-emerald-600" />
+                  <span className="text-xs font-bold text-slate-700">Installment</span>
                 </label>
               </div>
 
               {payMode === 'full' && (
-                <div className="bg-blue-50 p-4 rounded-xl">
-                  <p className="text-sm text-blue-700 font-semibold">You will pay the full balance due:</p>
-                  <p className="text-2xl font-black text-blue-800 mt-1">Rs. {feeData.dueAmount?.toLocaleString()}</p>
+                <div className="rounded-xl bg-emerald-50 p-4">
+                  <p className="text-xs font-bold text-emerald-700">You will pay the full balance due:</p>
+                  <p className="mt-1 text-2xl font-black text-emerald-800">Rs. {feeData.dueAmount?.toLocaleString()}</p>
                 </div>
               )}
 
               {payMode === 'installment' && (
                 <div>
-                  <label className="text-sm font-semibold text-slate-700 block mb-2">Enter Amount (Max: Rs. {feeData.dueAmount?.toLocaleString()})</label>
+                  <label className="mb-2 block text-xs font-bold text-slate-700">Enter Amount (Max: Rs. {feeData.dueAmount?.toLocaleString()})</label>
                   <div className="flex items-center gap-2">
                     <span className="text-lg font-bold text-slate-400">Rs.</span>
-                    <input
-                      type="number"
-                      value={payAmount}
-                      onChange={e => setPayAmount(e.target.value)}
-                      max={feeData.dueAmount}
-                      placeholder="Enter amount"
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                    <input type="number" value={payAmount} onChange={e => setPayAmount(e.target.value)} max={feeData.dueAmount} placeholder="Enter amount"
+                      className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" />
                   </div>
                 </div>
               )}
 
-              <button
-                onClick={handlePay}
-                disabled={paying}
-                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-emerald-200"
-              >
+              <button onClick={handlePay} disabled={paying}
+                className="flex w-full items-center justify-center gap-3 rounded-xl bg-emerald-600 px-6 py-4 text-sm font-bold text-white shadow-lg transition-all hover:bg-emerald-700 disabled:bg-emerald-400">
                 {paying ? (
-                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                ) : (
-                  <CurrencyDollarIcon className="w-5 h-5" />
-                )}
+                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : <CurrencyDollarIcon className="h-5 w-5" />}
                 {paying ? 'Processing...' : `Pay Rs. ${(payMode === 'full' ? feeData.dueAmount : Number(payAmount || 0)).toLocaleString()} via eSewa`}
               </button>
             </div>
@@ -379,6 +339,51 @@ function FeesContent() {
               <input key={key} type="hidden" name={key} value={val} />
             ))}
           </form>
+        )}
+
+        {/* ─── Payment History ─── */}
+        {payments.length > 0 && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm no-print">
+            <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+              <CheckCircleIcon className="h-4 w-4 text-emerald-500" />
+              Payment History
+            </h3>
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="px-3 py-2.5 text-left">Date</th>
+                    <th className="px-3 py-2.5 text-right">Amount</th>
+                    <th className="px-3 py-2.5 text-center">Method</th>
+                    <th className="px-3 py-2.5 text-center">Status</th>
+                    <th className="px-3 py-2.5 text-left">Reference</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {payments.map((p, i) => (
+                    <tr key={p._id || i} className="hover:bg-slate-50/50">
+                      <td className="px-3 py-2 text-slate-600 font-medium">{toNepaliDate(p.date)}</td>
+                      <td className="px-3 py-2 text-right font-bold text-slate-900">Rs. {(p.amount || 0).toLocaleString()}</td>
+                      <td className="px-3 py-2 text-center">
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 uppercase">{p.method || 'cash'}</span>
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          p.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : p.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          {p.status || 'completed'}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-[10px] text-slate-400 font-mono truncate max-w-[100px]">{p.transactionId || p.referenceId || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-[10px] text-slate-400 text-right">
+              Total Payments: <strong className="text-slate-700">Rs. {payments.filter(p => p.status === 'completed').reduce((s, p) => s + (p.amount || 0), 0).toLocaleString()}</strong>
+            </p>
+          </div>
         )}
       </div>
     </div>
@@ -404,8 +409,8 @@ function numberToWords(num) {
 export default function StudentFees() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-emerald-600 border-t-transparent" />
       </div>
     }>
       <FeesContent />

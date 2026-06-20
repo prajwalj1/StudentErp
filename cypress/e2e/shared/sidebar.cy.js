@@ -38,7 +38,7 @@ describe("Sidebar Navigation", () => {
     });
 
     it("displays user info in sidebar", () => {
-      cy.contains("Owner").should("be.visible");
+      cy.contains("Administrator").should("be.visible");
     });
 
     it("has logout button in sidebar", () => {

@@ -50,7 +50,7 @@ export function toNepaliDateShort(dateStr) {
   }
 }
 
-export function toLocalDateStr(date) {
+export function toLocalDateStr(date = new Date()) {
   const d = date instanceof Date ? date : new Date(date);
   if (isNaN(d.getTime())) return '';
   const y = d.getFullYear();

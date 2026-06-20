@@ -5,7 +5,9 @@ import dbConnect from "@/lib/mongodb";
 import Notice from "@/models/Notice";
 import Student from "@/models/Student";
 import Subscriber from "@/models/Subscriber";
+import Notification from "@/models/Notification";
 import { sendNoticeEmail } from "@/lib/mail";
+import { validate, noticeSchema } from "@/lib/validate";
 
 export async function GET(req) {
   try {
@@ -58,7 +60,12 @@ export async function POST(req) {
     }
 
     await dbConnect();
-    const { title, content, imageUrl, expiryDate, targetAudience, grade } = await req.json();
+    const body = await req.json();
+    const validation = validate(noticeSchema)(body);
+    if (!validation.valid) {
+      return NextResponse.json({ error: "Validation failed", details: validation.errors }, { status: 400 });
+    }
+    const { title, content, imageUrl, expiryDate, targetAudience, grade } = body;
 
     if (!title && !content && !imageUrl) {
       return NextResponse.json({ error: "Provide at least an image, title, or content" }, { status: 400 });
@@ -75,17 +82,40 @@ export async function POST(req) {
       createdByRole: session.user.role,
     });
 
-    if (session.user.role === "OWNER") {
+    if (notice.targetAudience === "all" || notice.targetAudience === "teacher") {
+      await Notification.create({
+        recipientRole: "TEACHER",
+        message: `New notice: ${notice.title || "Untitled"}`,
+        link: "/teacher/dashboard",
+      });
+    }
+    if (notice.targetAudience === "all" || notice.targetAudience === "student") {
+      await Notification.create({
+        recipientRole: "STUDENT",
+        message: `New notice: ${notice.title || "Untitled"}`,
+        link: "/student/dashboard",
+      });
+    }
+    await Notification.create({
+      recipientRole: "OWNER",
+      message: `${session.user.name} posted a notice: ${notice.title || "Untitled"}`,
+      link: "/owner/dashboard",
+    });
+
+    if (session.user.role === "OWNER" && notice.targetAudience === "all") {
       try {
-        const subscribers = await Subscriber.find({}).lean();
-        if (subscribers.length > 0) {
+        const subs = await Subscriber.find({}).lean();
+        if (subs.length > 0) {
+          const baseUrl = req.nextUrl.origin;
           await Promise.allSettled(
-            subscribers.map((sub) =>
+            subs.map((sub) =>
               sendNoticeEmail({
                 to: sub.email,
                 title: notice.title,
                 content: notice.content,
+                imageUrl: notice.imageUrl,
                 createdByName: notice.createdByName,
+                baseUrl,
               })
             )
           );

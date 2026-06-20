@@ -6,11 +6,11 @@ describe("Owner Students Page", () => {
 
   it("displays students page with header", () => {
     cy.contains("Students").should("be.visible");
-    cy.contains("Manage enrolled students and their academic records.").should("be.visible");
+    cy.contains("enrolled students").should("be.visible");
   });
 
   it("has search and filter controls", () => {
-    cy.getByPlaceholder("Search students...").should("exist");
+    cy.getByPlaceholder("Search students by name...").should("exist");
     cy.contains("All Grades").should("exist");
   });
 
@@ -19,7 +19,7 @@ describe("Owner Students Page", () => {
     cy.contains("Add New Student").should("be.visible");
     cy.contains("Full Name").should("be.visible");
     cy.contains("Student ID").should("be.visible");
-    cy.contains("Grade / Class").should("be.visible");
+    cy.contains("Grade").should("be.visible");
   });
 
   it("has Promote All button", () => {

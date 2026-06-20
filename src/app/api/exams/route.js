@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/authOptions";
 import dbConnect from "@/lib/mongodb";
 import Exam from "@/models/Exam";
 import Student from "@/models/Student";
+import { validate, examSchema } from "@/lib/validate";
 
 export async function GET(req) {
   try {
@@ -12,14 +13,17 @@ export async function GET(req) {
 
     await dbConnect();
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     if (session.user.role === "STUDENT") {
       const student = await Student.findById(session.user.id).select("grade").lean();
       if (!student) return NextResponse.json([]);
-      const exams = await Exam.find({ grade: student.grade }).sort({ date: 1 }).lean();
+      const exams = await Exam.find({ grade: student.grade, date: { $gte: today } }).sort({ date: 1 }).lean();
       return NextResponse.json(exams);
     }
 
-    const exams = await Exam.find().sort({ date: 1 }).lean();
+    const exams = await Exam.find({ date: { $gte: today } }).sort({ date: 1 }).lean();
     return NextResponse.json(exams);
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -29,12 +33,19 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== "OWNER") {
+    if (!session || (session.user.role !== "OWNER" && session.user.role !== "TEACHER")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await dbConnect();
     const body = await req.json();
+
+    if (!Array.isArray(body)) {
+      const validation = validate(examSchema)(body);
+      if (!validation.valid) {
+        return NextResponse.json({ error: "Validation failed", details: validation.errors }, { status: 400 });
+      }
+    }
 
     // Support bulk insertion for routines
     if (Array.isArray(body)) {
@@ -72,7 +83,7 @@ export async function PATCH(req) {
 export async function DELETE(req) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== "OWNER") {
+    if (!session || (session.user.role !== "OWNER" && session.user.role !== "TEACHER")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

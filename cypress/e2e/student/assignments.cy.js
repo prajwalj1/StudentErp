@@ -7,7 +7,7 @@ describe("Student Assignments Page", () => {
 
   it("displays assignments page", () => {
     cy.contains("Assignments").should("be.visible");
-    cy.contains("Assignments assigned by your teachers").should("be.visible");
+    cy.contains("Track and submit your coursework").should("be.visible");
   });
 
   it("shows list of assignments or empty state", () => {

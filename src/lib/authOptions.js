@@ -4,6 +4,7 @@ import Teacher from "@/models/Teacher";
 import Student from "@/models/Student";
 import bcrypt from "bcryptjs";
 
+
 export const authOptions = {
   providers: [
     CredentialsProvider({
@@ -12,7 +13,7 @@ export const authOptions = {
         identifier: { label: "Email or Teacher ID", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.identifier || !credentials?.password) {
           return null;
         }
@@ -21,7 +22,7 @@ export const authOptions = {
         
         // Hardcoded Owner for initial access
         if (credentials.identifier === "owner@erp.com" && credentials.password === "password") {
-          return { id: "owner-1", name: "Owner", email: "owner@erp.com", role: "OWNER" };
+          return { id: "owner-1", name: "Administrator", email: "owner@erp.com", role: "OWNER" };
         }
 
         // Check Teachers (by email or teacherId)
@@ -111,6 +112,19 @@ export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: "/login",
+  },
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === "production"
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
   },
 };
 

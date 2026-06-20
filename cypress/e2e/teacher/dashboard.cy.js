@@ -11,7 +11,7 @@ describe("Teacher Dashboard", () => {
 
   it("shows assigned schedule section", () => {
     cy.contains("Assigned Schedule").should("be.visible");
-    cy.contains("Classes Total").should("be.visible");
+    cy.contains("My Classes").should("be.visible");
   });
 
   it("shows my students section", () => {
@@ -19,17 +19,8 @@ describe("Teacher Dashboard", () => {
     cy.contains("View All Students").should("be.visible");
   });
 
-  it("shows class performance stats", () => {
+  it("shows class performance section", () => {
     cy.contains("Class Performance").should("be.visible");
-    cy.contains("Avg. Attendance").should("be.visible");
-    cy.contains("Assignment Completion").should("be.visible");
-    cy.contains("Exams Prepared").should("be.visible");
-  });
-
-  it("shows send notice form", () => {
-    cy.contains("Send Notice").should("be.visible");
-    cy.getByPlaceholder("Notice title (optional)").should("exist");
-    cy.getByPlaceholder("Write your notice...").should("exist");
-    cy.contains("Send to Students").should("exist");
+    cy.contains("Select a grade to view performance").should("be.visible");
   });
 });

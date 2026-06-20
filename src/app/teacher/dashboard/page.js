@@ -3,25 +3,58 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { MegaphoneIcon, PhotoIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
+import {
+  BookOpenIcon, UserGroupIcon, ClockIcon, CheckCircleIcon,
+  ExclamationTriangleIcon, AcademicCapIcon, ChartBarIcon,
+  ArrowRightIcon, XMarkIcon,
+} from '@heroicons/react/24/outline';
 
-/**
- * Teacher Dashboard Page
- * Content is focused on class schedules and academic performance.
- * The shell (Sidebar/Header) is provided by LayoutWrapper.
- */
+function StatBox({ icon: Icon, label, value, color, onClick }) {
+  const colors = { blue: 'from-blue-500 to-indigo-600', emerald: 'from-emerald-500 to-emerald-600', amber: 'from-amber-500 to-amber-600', indigo: 'from-indigo-500 to-purple-600' };
+  const Comp = onClick ? 'button' : 'div';
+  return (
+    <Comp onClick={onClick} className={`rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100 flex items-center gap-3 ${onClick ? 'cursor-pointer hover:shadow-md transition-all' : ''}`}>
+      <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${colors[color] || colors.blue} text-white shadow-sm`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <div className="text-left">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{label}</p>
+        <p className="text-lg font-extrabold text-slate-900">{value}</p>
+      </div>
+    </Comp>
+  );
+}
+
+function Toast({ toast, onClose }) {
+  useEffect(() => { if (toast) { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); } }, [toast, onClose]);
+  if (!toast) return null;
+  return (
+    <div className={`fixed bottom-6 right-6 z-[200] flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-2xl animate-[slideUp_0.3s_ease-out] ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`}>
+      {toast.type === 'success' ? <CheckCircleIcon className="h-5 w-5" /> : <ExclamationTriangleIcon className="h-5 w-5" />}
+      {toast.text}
+    </div>
+  );
+}
+
 export default function TeacherDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [schedules, setSchedules] = useState([]);
   const [students, setStudents] = useState([]);
+  const [notices, setNotices] = useState([]);
+  const [showNoticePopup, setShowNoticePopup] = useState(false);
+  const [noticePopupIndex, setNoticePopupIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [noticeTitle, setNoticeTitle] = useState('');
-  const [noticeContent, setNoticeContent] = useState('');
-  const [noticeImage, setNoticeImage] = useState(null);
-  const [noticePreview, setNoticePreview] = useState('');
-  const [sendingNotice, setSendingNotice] = useState(false);
-  const [noticeMsg, setNoticeMsg] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [selectedGrade, setSelectedGrade] = useState('');
+  const [performanceStats, setPerformanceStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+
+  const showToast = (type, text) => setToast({ type, text });
+
+  const dismissNotice = (id) => {
+    setNotices(prev => prev.filter(n => n._id !== id));
+  };
 
   useEffect(() => {
     if (status === 'unauthenticated' || (session && session.user.role !== 'TEACHER')) {
@@ -33,9 +66,8 @@ export default function TeacherDashboard() {
 
   const fetchData = async () => {
     try {
-      const [classesRes, studentsRes] = await Promise.all([
-        fetch('/api/classes'),
-        fetch('/api/students'),
+      const [classesRes, studentsRes, noticesRes] = await Promise.all([
+        fetch('/api/classes'), fetch('/api/students'), fetch('/api/notices'),
       ]);
       if (classesRes.ok && studentsRes.ok) {
         const classesData = await classesRes.json();
@@ -48,207 +80,262 @@ export default function TeacherDashboard() {
         setSchedules(myClasses);
         setStudents(studentsData.filter(s => gradeSet.has(s.grade)));
       }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+      if (noticesRes.ok) {
+        const allNotices = await noticesRes.json();
+        const now = new Date();
+        const active = allNotices.filter(n => {
+          if (n.expiryDate && new Date(n.expiryDate) < now) return false;
+          return true;
+        });
+        setNotices(active.slice(0, 3));
+        const hasImage = active.slice(0, 3).some(n => n.imageUrl);
+        if (hasImage && !sessionStorage.getItem('noticePopupShown')) { setShowNoticePopup(true); setNoticePopupIndex(0); }
+      }
+    } catch (e) { console.error(e) } finally { setLoading(false); }
   };
 
+  const uniqueGrades = [...new Set(schedules.map(s => s.grade).filter(Boolean))];
+
+  useEffect(() => {
+    if (!selectedGrade) {
+      setPerformanceStats(null);
+      return;
+    }
+    setStatsLoading(true);
+    fetch(`/api/teacher/stats?grade=${encodeURIComponent(selectedGrade)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setPerformanceStats(data))
+      .catch(() => setPerformanceStats(null))
+      .finally(() => setStatsLoading(false));
+  }, [selectedGrade]);
+
   if (status === 'loading' || loading) return (
-    <div className="flex items-center justify-center p-20">
-      <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-blue-600 border-t-transparent" />
     </div>
   );
 
   return (
-    <div className="p-4 sm:p-8 space-y-8">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 to-blue-700 rounded-3xl p-8 text-white shadow-xl">
-        <div className="relative z-10">
-          <h1 className="text-2xl sm:text-3xl font-black mb-2">Welcome Back, <span className="whitespace-nowrap">{session?.user?.name}</span>!</h1>
-          <p className="text-indigo-100 max-w-md">You have {schedules.length} classes scheduled. Your dashboard is now synced with your live timetable.</p>
-        </div>
-        <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
-      </div>
+    <div className="min-h-full bg-gradient-to-br from-slate-50/80 via-white to-blue-50/20">
+      <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6 lg:p-8">
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Today's Schedule & My Students */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-100">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-slate-900">Assigned Schedule</h3>
-              <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">{schedules.length} Classes Total</span>
+        {/* ─── Hero Header ─── */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-5 sm:p-6 shadow-xl">
+          <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-blue-500/10 blur-3xl" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-1">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
+                <AcademicCapIcon className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-black text-white">Welcome Back, {session?.user?.name}</h1>
+                <p className="text-xs text-slate-400">You have {schedules.length} class{schedules.length !== 1 ? 'es' : ''} scheduled</p>
+              </div>
             </div>
-            <div className="space-y-4">
+          </div>
+        </div>
+
+        {/* ─── Stats Row ─── */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatBox icon={BookOpenIcon} label="My Classes" value={schedules.length} color="blue" onClick={() => router.push('/teacher/classes')} />
+          <StatBox icon={UserGroupIcon} label="My Students" value={students.length} color="emerald" onClick={() => router.push('/teacher/students')} />
+          <StatBox icon={AcademicCapIcon} label="Grades Taught" value={uniqueGrades.length} color="amber" />
+          <StatBox icon={ChartBarIcon} label="Subjects" value={[...new Set(schedules.map(s => s.subject).filter(Boolean))].length} color="indigo" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* Left Column — Schedule & Students */}
+          <div className="lg:col-span-2 space-y-5">
+
+            {/* ─── Assigned Schedule ─── */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-slate-900">Assigned Schedule</h3>
+                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">{schedules.length} Class{schedules.length !== 1 ? 'es' : ''}</span>
+              </div>
               {schedules.length === 0 ? (
-                <p className="text-slate-500 text-sm">You have no classes assigned yet. Please contact the Owner.</p>
+                <p className="text-sm text-slate-500">You have no classes assigned yet. Please contact the Owner.</p>
               ) : (
-                schedules.map((item) => (
-                <div key={item._id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-white border border-slate-200 text-slate-900 rounded-xl flex items-center justify-center font-bold text-xs text-center leading-tight shadow-sm px-1">
-                      {item.time.split('-')[0]?.trim()}
+                <div className="space-y-2">
+                  {schedules.map((item) => (
+                    <div key={item._id} className="flex items-center justify-between rounded-xl bg-slate-50 p-3 transition-all hover:bg-slate-100 hover:shadow-sm border border-transparent hover:border-slate-200">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-center text-[10px] font-bold leading-tight text-slate-700 shadow-sm border border-slate-200">
+                          {item.time?.split('-')[0]?.trim() || 'TBD'}
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-900">{item.subject}</h4>
+                          <p className="text-[10px] text-slate-500 font-medium">{item.grade}{item.section ? ` (Sec ${item.section})` : ''} / {item.room || 'TBD'}</p>
+                        </div>
+                      </div>
+                      <button onClick={() => router.push('/teacher/attendance')}
+                        className="hidden sm:inline-flex items-center gap-1 rounded-xl bg-blue-600 px-4 py-2 text-[10px] font-bold text-white shadow-sm transition-all hover:bg-blue-700">
+                        Mark Attendance <ArrowRightIcon className="h-3 w-3" />
+                      </button>
                     </div>
-                    <div>
-                      <h4 className="font-bold text-slate-900">{item.subject}</h4>
-                      <p className="text-xs text-slate-500 font-medium">{item.grade} {item.section ? `(Sec ${item.section})` : ''} • {item.room || 'TBD'}</p>
-                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* ─── My Students ─── */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-slate-900">My Students</h3>
+                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">{students.length} Total</span>
+              </div>
+              {students.length === 0 ? (
+                <p className="text-sm text-slate-500">No students found for your assigned classes.</p>
+              ) : (
+                <div className="space-y-4">
+                  {(() => {
+                    const groups = {};
+                    students.forEach(s => {
+                      const key = s.grade || 'Ungraded';
+                      if (!groups[key]) groups[key] = [];
+                      groups[key].push(s);
+                    });
+                    return Object.keys(groups).sort().map(grade => (
+                      <div key={grade}>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-xs font-bold text-slate-700">{grade}</h4>
+                          <span className="text-[10px] text-slate-400">{groups[grade].length} students</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {groups[grade].slice(0, 8).map(s => (
+                            <div key={s._id} className="flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1 border border-slate-100">
+                              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 text-[8px] font-bold text-white">{s.name.charAt(0)}</div>
+                              <span className="text-[10px] font-semibold text-slate-800">{s.name}</span>
+                            </div>
+                          ))}
+                          {groups[grade].length > 8 && (
+                            <span className="text-[10px] text-slate-400 self-center">+{groups[grade].length - 8} more</span>
+                          )}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              )}
+              <button onClick={() => router.push('/teacher/students')}
+                className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-50 py-2.5 text-xs font-bold text-indigo-600 transition-all hover:bg-indigo-100">
+                View All Students <ArrowRightIcon className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Right Column — Performance + Notice */}
+          <div className="space-y-5">
+
+            {/* ─── Class Performance ─── */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-sm">
+                    <ChartBarIcon className="h-5 w-5" />
                   </div>
-                  <button 
-                    onClick={() => router.push('/teacher/attendance')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all hidden sm:block"
+                  <h3 className="text-sm font-bold text-slate-900">Class Performance</h3>
+                </div>
+                {uniqueGrades.length > 0 && (
+                  <select
+                    value={selectedGrade}
+                    onChange={(e) => setSelectedGrade(e.target.value)}
+                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
                   >
-                    Mark Attendance
-                  </button>
+                    <option value="">All Grades</option>
+                    {uniqueGrades.map((g) => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              {statsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-amber-600 border-t-transparent" />
                 </div>
-              )))}
-            </div>
-          </div>
-
-          {/* My Students */}
-          <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-100">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-slate-900">My Students</h3>
-              <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">{students.length} Total</span>
-            </div>
-            {students.length === 0 ? (
-              <p className="text-slate-500 text-sm">No students found for your assigned classes.</p>
-            ) : (
-              <div className="space-y-4">
-                {(() => {
-                  const groups = {};
-                  students.forEach(s => {
-                    const key = s.grade || 'Ungraded';
-                    if (!groups[key]) groups[key] = [];
-                    groups[key].push(s);
-                  });
-                  return Object.keys(groups).sort().map(grade => (
-                    <div key={grade}>
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-bold text-slate-700">{grade}</h4>
-                        <span className="text-xs text-slate-400">{groups[grade].length} students</span>
+              ) : !selectedGrade ? (
+                <p className="text-center text-xs text-slate-400 py-8">Select a grade to view performance</p>
+              ) : !performanceStats ? (
+                <p className="text-center text-xs text-slate-400 py-8">No data available</p>
+              ) : (
+                <div className="space-y-5">
+                  {[
+                    { label: 'Avg. Attendance', value: performanceStats.attendance, color: 'from-blue-500 to-blue-600' },
+                    { label: 'Assignment Completion', value: performanceStats.assignmentCompletion, color: 'from-indigo-500 to-indigo-600' },
+                    { label: 'Exams Prepared', value: performanceStats.examsPrepared, color: 'from-emerald-500 to-emerald-600' },
+                  ].map((stat, i) => (
+                    <div key={i}>
+                      <div className="flex justify-between text-[10px] font-bold text-slate-500 mb-1.5">
+                        <span>{stat.label}</span>
+                        <span className="text-slate-900">{stat.value}%</span>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {groups[grade].slice(0, 6).map(s => (
-                          <div key={s._id} className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
-                            <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">{s.name.charAt(0)}</div>
-                            <span className="text-xs font-semibold text-slate-800">{s.name}</span>
-                          </div>
-                        ))}
-                        {groups[grade].length > 6 && (
-                          <span className="text-xs text-slate-400 self-center">+{groups[grade].length - 6} more</span>
-                        )}
+                      <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                        <div className={`h-full rounded-full bg-gradient-to-r ${stat.color} transition-all duration-1000`} style={{ width: `${stat.value}%` }} />
                       </div>
                     </div>
-                  ));
-                })()}
-              </div>
-            )}
-            <button
-              onClick={() => router.push('/teacher/students')}
-              className="mt-4 w-full py-2.5 bg-indigo-50 text-indigo-600 font-bold rounded-xl text-sm hover:bg-indigo-100 transition-colors"
-            >
-              View All Students
-            </button>
-          </div>
-        </div>
-
-        {/* Sidebar Stats */}
-        <div className="space-y-8">
-          <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-100">
-            <h3 className="text-xl font-bold text-slate-900 mb-6">Class Performance</h3>
-            <div className="space-y-6">
-              {[
-                { label: 'Avg. Attendance', value: '92%', color: 'blue' },
-                { label: 'Assignment Completion', value: '78%', color: 'indigo' },
-                { label: 'Exams Prepared', value: '60%', color: 'emerald' },
-              ].map((stat, i) => (
-                <div key={i}>
-                  <div className="flex justify-between text-xs font-bold text-slate-500 mb-2">
-                    <span>{stat.label}</span>
-                    <span className="text-slate-900">{stat.value}</span>
-                  </div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div className={`h-full bg-blue-600 rounded-full transition-all duration-1000`} style={{ width: stat.value }}></div>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          </div>
 
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-            <div className="flex items-center gap-2 mb-4">
-              <MegaphoneIcon className="w-5 h-5 text-purple-600" />
-              <h3 className="text-base font-bold text-slate-800">Send Notice</h3>
-            </div>
-            {noticeMsg && (
-              <div className={`mb-3 p-2 rounded-xl text-xs font-bold ${noticeMsg.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-                {noticeMsg.text}
+            {/* ─── Recent Notices ─── */}
+            {notices.length > 0 && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-slate-800">Recent Notices</h3>
+                  <button onClick={() => router.push('/teacher/notices')}
+                    className="text-[10px] font-bold text-blue-600 hover:text-blue-700 transition-colors">View All</button>
+                </div>
+                <div className="space-y-3">
+                  {notices.map((n) => (
+                    <div key={n._id} className="relative rounded-xl border border-slate-100 bg-slate-50 p-3 pr-9">
+                      <button onClick={() => dismissNotice(n._id)}
+                        className="absolute top-2 right-2 rounded p-0.5 text-slate-300 transition-all hover:bg-red-50 hover:text-red-500">
+                        <XMarkIcon className="h-3.5 w-3.5" />
+                      </button>
+                      {n.title && <p className="text-xs font-bold text-slate-900 mb-1">{n.title}</p>}
+                      {n.content && <p className="text-[11px] text-slate-600 line-clamp-2">{n.content}</p>}
+                      {n.imageUrl && (
+                        <img src={n.imageUrl} alt="" className="mt-2 max-h-16 rounded-lg object-contain border border-slate-200" />
+                      )}
+                      <p className="mt-1.5 text-[10px] text-slate-400 font-semibold">Posted by {n.createdByName}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
-            <input type="text" value={noticeTitle} onChange={e => setNoticeTitle(e.target.value)}
-              placeholder="Notice title (optional)"
-              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-purple-500" />
-            <textarea value={noticeContent} onChange={e => setNoticeContent(e.target.value)}
-              placeholder="Write your notice..."
-              rows={3}
-              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none" />
-            <label className="flex items-center gap-2 px-3 py-2 border border-dashed border-slate-200 rounded-xl text-xs text-slate-500 hover:bg-slate-50 cursor-pointer mb-2">
-              <PhotoIcon className="w-4 h-4" />
-              {noticeImage ? 'Image selected' : 'Attach image'}
-              <input type="file" accept="image/*" className="hidden" onChange={e => {
-                const file = e.target.files[0];
-                if (file) {
-                  setNoticeImage(file);
-                  const reader = new FileReader();
-                  reader.onload = (ev) => setNoticePreview(ev.target.result);
-                  reader.readAsDataURL(file);
-                }
-              }} />
-            </label>
-            {noticePreview && (
-              <div className="mb-2">
-                <img src={noticePreview} alt="" className="max-h-24 object-contain" />
-              </div>
-            )}
-            <button onClick={async () => {
-              if (!noticeContent.trim() && !noticeImage) return;
-              setSendingNotice(true);
-              try {
-                let imageUrl = '';
-                if (noticeImage) {
-                  imageUrl = await new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = (ev) => resolve(ev.target.result);
-                    reader.readAsDataURL(noticeImage);
-                  });
-                }
-                const res = await fetch('/api/notices', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ title: noticeTitle, content: noticeContent, imageUrl, targetAudience: 'student' }),
-                });
-                if (res.ok) {
-                  setNoticeTitle(''); setNoticeContent(''); setNoticeImage(null); setNoticePreview('');
-                  setNoticeMsg({ type: 'success', text: 'Notice sent to students!' });
-                  setTimeout(() => setNoticeMsg(null), 3000);
-                } else {
-                  setNoticeMsg({ type: 'error', text: 'Failed to send.' });
-                }
-              } catch {
-                setNoticeMsg({ type: 'error', text: 'Network error.' });
-              } finally {
-                setSendingNotice(false);
-              }
-            }} disabled={sendingNotice}
-              className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer">
-              {sendingNotice ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <PaperAirplaneIcon className="w-4 h-4" />}
-              Send to Students
-            </button>
+
+
           </div>
         </div>
       </div>
+
+      {/* ─── Notice Popup ─── */}
+      {showNoticePopup && notices.length > 0 && noticePopupIndex < notices.length && notices[noticePopupIndex]?.imageUrl && (
+        <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
+          <button onClick={() => {
+            const remaining = notices.filter(n => n.imageUrl);
+            const idx = remaining.findIndex(n => n._id === notices[noticePopupIndex]?._id);
+            if (remaining.length > 1 && idx < remaining.length - 1) {
+              setNoticePopupIndex(notices.findIndex(n => n._id === remaining[idx + 1]._id));
+            } else {
+              sessionStorage.setItem('noticePopupShown', '1');
+              setShowNoticePopup(false);
+            }
+          }}
+            className="absolute top-4 right-4 z-10 cursor-pointer rounded-full bg-white/20 p-2 text-white transition-colors hover:bg-white/40">
+            <XMarkIcon className="h-6 w-6" />
+          </button>
+          <img src={notices[noticePopupIndex].imageUrl} alt="Notice" className="max-h-full max-w-full object-contain p-8" />
+        </div>
+      )}
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
+
+      <style jsx>{`
+        @keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
     </div>
   );
 }

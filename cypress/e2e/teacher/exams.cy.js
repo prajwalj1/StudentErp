@@ -7,10 +7,10 @@ describe("Teacher Exams Page", () => {
 
   it("displays exams page", () => {
     cy.contains("Examinations").should("exist");
-    cy.contains("Select a class to view its examination routine.").should("exist");
+    cy.contains("View exam routines and upload question papers").should("exist");
   });
 
   it("shows page description", () => {
-    cy.contains("Select a class to view its examination routine.").should("exist");
+    cy.contains("View exam routines and upload question papers").should("exist");
   });
 });

@@ -6,7 +6,7 @@ describe("Owner Reports Page", () => {
 
   it("displays reports page", () => {
     cy.contains("School Reports").should("be.visible");
-    cy.contains("Analytics and overview of school performance.").should("be.visible");
+    cy.contains("Analytics and overview of school performance").should("be.visible");
   });
 
   it("shows financial overview", () => {
@@ -21,7 +21,8 @@ describe("Owner Reports Page", () => {
     cy.contains("Average School Attendance").should("be.visible");
   });
 
-  it("has export button", () => {
-    cy.contains("Export PDF").should("be.visible");
+  it("has stat cards", () => {
+    cy.contains("Total Students").should("be.visible");
+    cy.contains("Total Teachers").should("be.visible");
   });
 });

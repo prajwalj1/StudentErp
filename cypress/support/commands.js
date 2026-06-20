@@ -37,6 +37,9 @@ Cypress.Commands.add("loginAsTeacher", (email = "teacher@school.com") => {
   cy.session(`teacher-${email}`, () => {
     cy.clearAllCookies();
     cy.clearAllLocalStorage();
+    cy.task("createSessionToken", { role: "TEACHER", name: "Test Teacher", email, extra: { teacherId: "TCH001" } }).then((token) => {
+      cy.setCookie("next-auth.session-token", token);
+    });
     cy.visit("/teacher/dashboard");
     cy.url({ timeout: 10000 }).should("include", "/teacher/dashboard");
   });
@@ -58,6 +61,9 @@ Cypress.Commands.add("loginAsStudent", (id = "STU001") => {
   cy.session(`student-${id}`, () => {
     cy.clearAllCookies();
     cy.clearAllLocalStorage();
+    cy.task("createSessionToken", { role: "STUDENT", name: "Test Student", email: "student@school.com", extra: { studentId: id, grade: "10" } }).then((token) => {
+      cy.setCookie("next-auth.session-token", token);
+    });
     cy.visit("/student/dashboard");
     cy.url({ timeout: 10000 }).should("include", "/student/dashboard");
   });

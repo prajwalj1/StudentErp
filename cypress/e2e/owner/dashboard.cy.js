@@ -4,15 +4,15 @@ describe("Owner Dashboard", () => {
     cy.visit("/owner/dashboard");
   });
 
-  it("displays welcome banner with owner name", () => {
-    cy.contains("Welcome back").should("be.visible");
+  it("displays welcome hero with school name", () => {
+    cy.contains("School Overview").should("be.visible");
     cy.contains("All systems operational").should("be.visible");
   });
 
   it("shows stat cards", () => {
     cy.contains("Total Students").should("be.visible");
     cy.contains("Total Teachers").should("be.visible");
-    cy.contains("Revenue (NPR)").should("be.visible");
+    cy.contains("Revenue Collected").should("be.visible");
     cy.contains("Avg Attendance").should("be.visible");
   });
 
@@ -23,7 +23,7 @@ describe("Owner Dashboard", () => {
     cy.contains("Manage Exams").should("be.visible");
   });
 
-  it("shows recent activity section", () => {
+  it("shows activity and system health sections", () => {
     cy.contains("Recent Activity").should("be.visible");
     cy.contains("System Health").should("be.visible");
   });

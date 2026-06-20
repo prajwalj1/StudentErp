@@ -2,27 +2,27 @@
 
 const team = [
   {
-    name: "Dr. Rajesh Sharma",
+    name: "Dr. Prajwal Gautam",
     role: "Principal",
-    image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=300&h=300",
+    image: "/images/SSSS.jpeg",
     description: "Leading Everest View with over 25 years of experience in educational administration. Committed to academic excellence and holistic student development."
   },
   {
-    name: "Mrs. Sunita Adhikari",
+    name: "Mr. Nir Prasad Gautam",
     role: "Academic Coordinator",
-    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=300&h=300",
+    image: "/images/SSSS.jpeg",
     description: "Oversees curriculum planning, teacher training, and academic standards across all grade levels."
   },
   {
     name: "Mr. Prakash Thapa",
     role: "Senior Teacher — Science",
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=300&h=300",
+    image: "/images/SSSS.jpeg",
     description: "A passionate science educator who makes complex concepts simple through hands-on experiments."
   },
   {
-    name: "Ms. Anjila Gurung",
+    name: "Ms. Sevoke Chandra Gautam",
     role: "Senior Teacher — Mathematics",
-    image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=300&h=300",
+    image: "/images/SSSS.jpeg",
     description: "Known for innovative teaching methods that help students develop strong analytical and problem-solving skills."
   }
 ];

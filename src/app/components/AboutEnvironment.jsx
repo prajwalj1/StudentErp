@@ -11,22 +11,40 @@ import {
 
 const features = [
   {
-    title: "Classroom Atmosphere",
-    description: "Spacious, well-ventilated classrooms with natural lighting and modern digital learning aids to create a focused study environment.",
+    title: "Experienced Faculty",
+    description: "Qualified and dedicated teachers who nurture every student with personalized attention and modern teaching methodologies.",
     icon: HomeModernIcon,
     color: "blue"
   },
   {
-    title: "Greenery & Spaces",
-    description: "Over 2 acres of open green campus with dedicated zones for outdoor learning, recreation, and physical activities.",
+    title: "Sports & Athletics",
+    description: "Well-maintained playgrounds, indoor games facilities, and regular sports events to promote physical fitness and teamwork.",
     icon: ShieldCheckIcon,
     color: "green"
   },
   {
-    title: "Learning Facilities",
-    description: "Specialized laboratories, a quiet digital library, and multi-purpose halls designed for diverse educational needs.",
+    title: "Science & Computer Labs",
+    description: "Fully equipped laboratories for physics, chemistry, biology, and computer science with hands-on practical learning approach.",
     icon: UserGroupIcon,
     color: "indigo"
+  },
+  {
+    title: "Library & Resource Center",
+    description: "A well-stocked library with thousands of books, digital resources, and quiet reading zones for research and self-study.",
+    icon: ChatBubbleLeftEllipsisIcon,
+    color: "purple"
+  },
+  {
+    title: "Transportation",
+    description: "Safe and reliable school bus service covering major routes with GPS tracking and trained attendants for student safety.",
+    icon: StarIcon,
+    color: "amber"
+  },
+  {
+    title: "Smart Classrooms",
+    description: "Every classroom equipped with interactive smart boards, projectors, and audio-visual aids for engaging digital lessons.",
+    icon: SparklesIcon,
+    color: "red"
   }
 ];
 
@@ -97,7 +115,7 @@ export default function AboutEnvironment() {
         {/* Feature Cards */}
         <div className="grid md:grid-cols-3 gap-5 mb-4">
           {features.map((feature, i) => (
-            <div key={i} className="group relative p-6 rounded-2xl bg-white/70 backdrop-blur-xl border border-white shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1 overflow-hidden">
+            <div key={i} className="group relative p-6 rounded-2xl bg-white/70 backdrop-blur-xl border border-white shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1 overflow-hidden animate-fadeIn" style={{ animationDelay: `${i * 0.15}s` }}>
               <div className="absolute inset-0 bg-gradient-to-br from-slate-200/0 via-transparent to-slate-300/0 opacity-0 group-hover:opacity-100 group-hover:from-slate-200/30 group-hover:to-slate-300/30 transition-all duration-500" />
               <div className={`relative z-10 w-12 h-12 rounded-xl mb-4 flex items-center justify-center text-xl shadow-sm group-hover:scale-110 transition-all duration-300 ${
                 feature.color === "blue" ? "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white" :
@@ -116,15 +134,21 @@ export default function AboutEnvironment() {
         {/* Testimonials */}
         <div className="relative">
           <div className="text-center mb-5">
-            <h3 className="text-lg font-bold text-slate-900 flex items-center justify-center gap-2">
-              <ChatBubbleLeftEllipsisIcon className="w-5 h-5 text-primary" />
-              Community Voices
-            </h3>
+            <div className="inline-flex items-center gap-2 px-5 py-2 bg-amber-50 border border-amber-100 rounded-full">
+              <ChatBubbleLeftEllipsisIcon className="w-4 h-4 text-amber-600" />
+              <span className="text-sm font-bold text-amber-600 uppercase tracking-wider">Testimonials</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
+              <span className="text-primary italic">Community Voices</span>
+            </h2>
+            <p className="mt-2 text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
+              Hear from parents, students, and alumni about their experience at Everest View.
+            </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {testimonials.slice(0, 3).map((item, i) => (
-              <div key={i} className="glass p-5 rounded-2xl border-white/40 shadow-sm relative group hover:bg-white transition-colors duration-300">
+              <div key={i} className="glass p-5 rounded-2xl border-white/40 shadow-sm relative group hover:bg-white transition-colors duration-300 animate-slideUp" style={{ animationDelay: `${i * 0.15}s` }}>
                 <div className="flex gap-1 mb-2">
                   {[...Array(item.rating)].map((_, idx) => (
                     <StarIcon key={idx} className="w-4 h-4 text-amber-400" />

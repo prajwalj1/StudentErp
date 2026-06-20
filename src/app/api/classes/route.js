@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/authOptions";
 import dbConnect from "@/lib/mongodb";
 import ClassSchedule from "@/models/ClassSchedule";
 import Student from "@/models/Student";
+import { validate, classSchema } from "@/lib/validate";
 
 export async function GET(req) {
   try {
@@ -40,6 +41,10 @@ export async function POST(req) {
 
     await dbConnect();
     const body = await req.json();
+    const validation = validate(classSchema)(body);
+    if (!validation.valid) {
+      return NextResponse.json({ error: "Validation failed", details: validation.errors }, { status: 400 });
+    }
     const newSchedule = await ClassSchedule.create(body);
     const populated = await newSchedule.populate('teacherId', 'name email department');
     return NextResponse.json(populated, { status: 201 });

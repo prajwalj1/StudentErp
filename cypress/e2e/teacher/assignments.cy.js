@@ -7,6 +7,6 @@ describe("Teacher Assignments Page", () => {
 
   it("displays assignments page", () => {
     cy.contains("Assignments").should("be.visible");
-    cy.contains("Create, distribute, and track student coursework and deadlines.").should("be.visible");
+    cy.contains("Create, distribute, and track coursework").should("be.visible");
   });
 });

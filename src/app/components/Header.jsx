@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation';
 import {
   Bars3Icon,
   XMarkIcon,
+  ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 
 const Header = () => {
@@ -42,7 +43,7 @@ const Header = () => {
   return (
     <>
     <header
-      className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
+      className={`fixed top-0 left-0 w-full z-50 animate-slideInDown transition-all duration-500 ${
         isScrolled
           ? 'bg-white/80 backdrop-blur-2xl shadow-lg border-b border-slate-200/50 py-3'
           : 'bg-white/80 backdrop-blur-md border-b border-slate-200/30 py-5'
@@ -58,13 +59,14 @@ const Header = () => {
                 src="/images/logo.png"
                 alt="Everest View Secondary Boarding School"
                 fill
+                sizes="56px"
                 className="object-cover"
                 priority
               />
             </div>
 
-            <div className="hidden sm:block leading-tight">
-              <h1 className="text-lg lg:text-xl font-black tracking-tight text-slate-900">
+            <div className="hidden lg:block leading-tight">
+              <h1 className="text-lg lg:text-2xl font-black tracking-tight text-slate-900 font-headline">
                 Everest View Secondary Boarding School
               </h1>
               <p className="text-xs lg:text-sm text-slate-500 font-medium">
@@ -73,12 +75,12 @@ const Header = () => {
             </div>
           </Link>
 
-          {/* ✅ Mobile Center Title */}
-          <div className="lg:hidden absolute left-1/2 -translate-x-1/2 text-center leading-tight">
-            <h1 className="text-sm font-black tracking-tight text-slate-900">
-              Everest View Secondey Boarding School
+          {/* Mobile Center Title */}
+          <div className="lg:hidden absolute left-1/2 -translate-x-1/2 text-center leading-tight max-w-[60%]">
+            <h1 className="text-[15px] sm:text-xs md:text-sm font-black tracking-tight text-slate-900 font-headline truncate">
+              Everest View Secondary Boarding School
             </h1>
-            <p className="text-[10px] text-slate-500 font-medium">
+            <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium">
               EVSBS [ERP]
             </p>
           </div>
@@ -98,8 +100,9 @@ const Header = () => {
             {!session && (
               <Link
                 href="/login"
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-lg hover:scale-105 transition-all duration-300"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-lg hover:scale-105 transition-all duration-300 flex items-center gap-2"
               >
+                <ArrowRightOnRectangleIcon className="w-4 h-4" />
                 Sign In
               </Link>
             )}
@@ -132,7 +135,7 @@ const Header = () => {
                   onClick={() => setShowLogoutModal(true)}
                   className="relative w-10 h-10 rounded-xl overflow-hidden ring-2 ring-slate-200 hover:ring-red-300 transition-all shrink-0"
                 >
-                  <Image src="/images/logo.png" alt="Logout" fill className="object-cover" />
+                  <Image src="/images/logo.png" alt="Logout" fill sizes="40px" className="object-cover" />
                 </button>
               </div>
             )}
@@ -173,8 +176,9 @@ const Header = () => {
               <Link
                 href="/login"
                 onClick={() => setIsMenuOpen(false)}
-                className="w-full text-center py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold"
+                className="w-full text-center py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold flex items-center justify-center gap-2"
               >
+                <ArrowRightOnRectangleIcon className="w-4 h-4" />
                 Sign In
               </Link>
             )}
@@ -185,7 +189,7 @@ const Header = () => {
                 className="w-full py-3 rounded-xl bg-red-500 text-white font-semibold flex items-center justify-center gap-2"
               >
                 <div className="relative w-5 h-5 rounded overflow-hidden bg-white/20 flex-shrink-0">
-                  <Image src="/images/logo.png" alt="" fill className="object-cover" />
+                  <Image src="/images/logo.png" alt="" fill sizes="20px" className="object-cover" />
                 </div>
                 Logout
               </button>
@@ -200,7 +204,7 @@ const Header = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm" onClick={() => setShowLogoutModal(false)}>
           <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center" onClick={e => e.stopPropagation()}>
             <div className="relative w-16 h-16 mx-auto mb-4 rounded-2xl overflow-hidden ring-2 ring-slate-100">
-              <Image src="/images/logo.png" alt="" fill className="object-cover" />
+              <Image src="/images/logo.png" alt="" fill sizes="64px" className="object-cover" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 mb-2">Do you want to really logout?</h3>
             <p className="text-sm text-slate-500 mb-6">You will be redirected to the login page.</p>
@@ -212,7 +216,7 @@ const Header = () => {
                 Cancel
               </button>
               <button
-                onClick={() => { setShowLogoutModal(false); signOut(); }}
+                onClick={() => { setShowLogoutModal(false); signOut({ callbackUrl: '/' }); }}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-all text-sm"
               >
                 Yes, Logout

@@ -6,7 +6,7 @@ describe("Owner Results Page", () => {
 
   it("displays results page", () => {
     cy.contains("Student Results & Marksheets").should("be.visible");
-    cy.contains("Review calculated GPA, percentages, and print official marksheets.").should("be.visible");
+    cy.contains("Review GPA, percentages, and print official marksheets").should("be.visible");
   });
 
   it("has exam type and grade selectors", () => {
@@ -17,6 +17,6 @@ describe("Owner Results Page", () => {
   });
 
   it("has print button", () => {
-    cy.contains("Print Marksheets").should("be.visible");
+    cy.contains("Print").should("be.visible");
   });
 });

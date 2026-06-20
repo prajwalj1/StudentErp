@@ -61,7 +61,7 @@ export default function ContactSection() {
           <div className="space-y-6">
             <div className="space-y-4">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-600/5 border border-blue-600/10 rounded-full">
-                <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-green-600 animate-pulse" />
                 <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Connect with Us</span>
               </div>
 
@@ -191,7 +191,7 @@ export default function ContactSection() {
 
                 {status === "success" && (
                   <div className="flex items-center gap-3 text-green-600 bg-green-50 p-3 rounded-2xl animate-in fade-in slide-in-from-bottom-2">
-                    <CheckCircleIcon className="w-4 h-4" />
+                    <CheckCircleIcon className="w-4 h-4 text-red-500 drop-shadow-[0_0_6px_rgba(239,68,68,0.6)] animate-pulse" />
                     <p className="text-xs font-bold tracking-tight">Success! We'll be in touch very soon.</p>
                   </div>
                 )}

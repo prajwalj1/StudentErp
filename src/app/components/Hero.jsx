@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import {
   StarIcon,
@@ -9,31 +9,37 @@ import {
   SparklesIcon,
 } from "@heroicons/react/24/solid";
 
-// Counter component
+// Counter component with IntersectionObserver
 const Counter = ({ end, duration = 2000 }) => {
   const [count, setCount] = useState(0);
+  const [started, setStarted] = useState(false);
+  const ref = useRef(null);
 
   useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setStarted(true); observer.disconnect(); } },
+      { threshold: 0.3 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!started) return;
     let startTime;
     let animationFrame;
-
     const animate = (timestamp) => {
       if (!startTime) startTime = timestamp;
       const progress = timestamp - startTime;
       const nextCount = Math.min(Math.floor((progress / duration) * end), end);
-
       setCount(nextCount);
-
-      if (progress < duration) {
-        animationFrame = requestAnimationFrame(animate);
-      }
+      if (progress < duration) animationFrame = requestAnimationFrame(animate);
     };
-
     animationFrame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationFrame);
-  }, [end, duration]);
+  }, [started, end, duration]);
 
-  return <span>{count.toLocaleString()}</span>;
+  return <span ref={ref}>{count.toLocaleString()}</span>;
 };
 
 export default function Hero() {
@@ -47,7 +53,7 @@ export default function Hero() {
 
       <div className="relative z-10 max-w-7xl w-full grid lg:grid-cols-2 gap-12 items-center">
         {/* LEFT */}
-        <div className="flex flex-col text-center lg:text-left">
+        <div className="flex flex-col text-center lg:text-left animate-slideUp">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-full w-fit mx-auto lg:mx-0 shadow-sm">
             <SparklesIcon className="w-3.5 h-3.5 text-blue-600" />
             <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">
@@ -118,7 +124,7 @@ export default function Hero() {
         </div>
 
         {/* RIGHT IMAGE */}
-        <div className="relative group max-w-lg mx-auto lg:ml-auto">
+        <div className="relative group max-w-lg mx-auto lg:ml-auto animate-fadeIn" style={{ animationDelay: '0.3s' }}>
           <div className="relative rounded-[2rem] overflow-hidden shadow-xl border-[8px] border-white/50 bg-white">
             <Image
               src="/images/info.jpeg"

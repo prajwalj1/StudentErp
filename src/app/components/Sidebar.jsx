@@ -134,7 +134,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
               <p className="text-[10px] text-slate-500 font-medium truncate uppercase tracking-tighter">{session?.user?.role ?? 'Owner'}</p>
             </div>
             <button
-              onClick={() => signOut({ callbackUrl: '/login' })}
+              onClick={() => signOut({ callbackUrl: '/' })}
               className="p-2 rounded-xl hover:bg-red-500/10 text-slate-400 hover:text-red-400 transition-colors group"
               title="Sign out"
             >

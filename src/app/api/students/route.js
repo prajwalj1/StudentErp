@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/authOptions";
 import dbConnect from "@/lib/mongodb";
 import Student from "@/models/Student";
 import bcrypt from "bcryptjs";
+import { validate, studentSchema } from "@/lib/validate";
 
 export async function GET(req) {
   try {
@@ -73,6 +74,11 @@ export async function POST(req) {
     }
     if (!password) {
       password = 'student123';
+    }
+
+    const validation = validate(studentSchema)({ name, studentId, email, grade, password, section });
+    if (!validation.valid) {
+      return NextResponse.json({ error: "Validation failed", details: validation.errors }, { status: 400 });
     }
 
     if (!name) {

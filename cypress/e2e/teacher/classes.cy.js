@@ -7,10 +7,10 @@ describe("Teacher My Classes Page", () => {
 
   it("displays my classes page", () => {
     cy.contains("My Classes").should("be.visible");
-    cy.contains("Manage your assigned classes and view student details.").should("be.visible");
+    cy.contains("Manage your assigned classes and lesson plans").should("be.visible");
   });
 
   it("shows empty state when no classes assigned", () => {
-    cy.contains("You have not been assigned any classes yet.").should("be.visible");
+    cy.contains("No classes assigned").should("be.visible");
   });
 });

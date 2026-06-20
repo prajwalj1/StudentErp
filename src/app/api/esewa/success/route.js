@@ -60,8 +60,10 @@ export async function GET(req) {
     const student = await Student.findById(payment.studentId);
     if (student) {
       student.paidAmount = (student.paidAmount || 0) + payment.amount;
-      student.dueAmount = Math.max(0, (student.totalFee || 0) - student.paidAmount);
-      student.feeStatus = student.paidAmount <= 0 ? "pending" : student.dueAmount <= 0 ? "completed" : "partial";
+      const prevDue = student.previousDue || 0;
+      const netTotal = (student.totalFee || 0) + prevDue - (student.scholarship || 0);
+      student.dueAmount = Math.max(0, netTotal - student.paidAmount);
+      student.feeStatus = student.dueAmount <= 0 ? "completed" : (student.paidAmount > 0 || prevDue > 0) ? "partial" : "pending";
       await student.save();
     }
 

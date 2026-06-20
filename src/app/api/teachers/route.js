@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/authOptions";
 import dbConnect from "@/lib/mongodb";
 import Teacher from "@/models/Teacher";
 import bcrypt from "bcryptjs";
+import { validate, teacherSchema } from "@/lib/validate";
 
 export async function GET(req) {
   try {
@@ -29,6 +30,10 @@ export async function POST(req) {
 
     await dbConnect();
     const body = await req.json();
+    const validation = validate(teacherSchema)(body);
+    if (!validation.valid) {
+      return NextResponse.json({ error: "Validation failed", details: validation.errors }, { status: 400 });
+    }
     const { name, email, teacherId, password } = body;
 
     if (!name || !email || !teacherId || !password) {

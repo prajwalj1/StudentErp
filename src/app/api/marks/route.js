@@ -5,6 +5,9 @@ import dbConnect from "@/lib/mongodb";
 import Mark from "@/models/Mark";
 import Student from "@/models/Student";
 import ClassSchedule from "@/models/ClassSchedule";
+import { validate, markSchema } from "@/lib/validate";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(req) {
   try {
@@ -31,7 +34,7 @@ export async function GET(req) {
       .lean();
 
     if (grade && grade !== "All") {
-      marks = marks.filter(m => m.studentId && m.studentId.grade === grade);
+      marks = marks.filter(m => m.classScheduleId && m.classScheduleId.grade === grade);
     }
 
     return NextResponse.json(marks);
@@ -48,7 +51,12 @@ export async function POST(req) {
     }
 
     await dbConnect();
-    const { classScheduleId, examType, marksData } = await req.json();
+    const body = await req.json();
+    const validation = validate(markSchema)(body);
+    if (!validation.valid) {
+      return NextResponse.json({ error: "Validation failed", details: validation.errors }, { status: 400 });
+    }
+    const { classScheduleId, examType, marksData } = body;
 
     if (!classScheduleId || !examType || !Array.isArray(marksData)) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });

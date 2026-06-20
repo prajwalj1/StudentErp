@@ -81,22 +81,24 @@ const Footer = () => {
           </div>
 
           <div>
-            <h4 className="text-white font-bold mb-6">Product</h4>
+            <h4 className="text-white font-bold mb-6">For Students</h4>
             <ul className="space-y-4">
-              <li><Link href="#features" className="hover:text-primary transition-colors">Features</Link></li>
-              <li><Link href="#" className="hover:text-primary transition-colors">Pricing</Link></li>
-              <li><Link href="#" className="hover:text-primary transition-colors">Security</Link></li>
-              <li><Link href="#" className="hover:text-primary transition-colors">API</Link></li>
+              <li><Link href="/student/dashboard" className="hover:text-primary transition-colors">Dashboard</Link></li>
+              <li><Link href="/student/fees" className="hover:text-primary transition-colors">Fee Details</Link></li>
+              <li><Link href="/student/marksheet" className="hover:text-primary transition-colors">Marksheet</Link></li>
+              <li><Link href="/student/assignments" className="hover:text-primary transition-colors">Assignments</Link></li>
+              <li><Link href="/student/routine" className="hover:text-primary transition-colors">Class Routine</Link></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="text-white font-bold mb-6">Company</h4>
+            <h4 className="text-white font-bold mb-6">For Teachers</h4>
             <ul className="space-y-4">
-              <li><Link href="#about" className="hover:text-primary transition-colors">About Us</Link></li>
-              <li><Link href="#" className="hover:text-primary transition-colors">Careers</Link></li>
-              <li><Link href="#" className="hover:text-primary transition-colors">Blog</Link></li>
-              <li><Link href="#contact" className="hover:text-primary transition-colors">Contact</Link></li>
+              <li><Link href="/teacher/dashboard" className="hover:text-primary transition-colors">Dashboard</Link></li>
+              <li><Link href="/teacher/classes" className="hover:text-primary transition-colors">My Classes</Link></li>
+              <li><Link href="/teacher/attendance" className="hover:text-primary transition-colors">Attendance</Link></li>
+              <li><Link href="/teacher/marks" className="hover:text-primary transition-colors">Marks Entry</Link></li>
+              <li><Link href="/teacher/exams" className="hover:text-primary transition-colors">Examinations</Link></li>
             </ul>
           </div>
 
@@ -122,7 +124,7 @@ const Footer = () => {
                 disabled={loading}
                 className="bg-primary hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg transition-colors font-bold text-sm shrink-0"
               >
-                {loading ? '...' : 'Join'}
+                {loading ? '...' : 'Subscribe'}
               </button>
             </form>
           </div>

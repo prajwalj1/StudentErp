@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/authOptions";
 import dbConnect from "@/lib/mongodb";
 import Attendance from "@/models/Attendance";
 import Teacher from "@/models/Teacher";
+import Notification from "@/models/Notification";
+import { validate, attendanceSchema } from "@/lib/validate";
 
 export async function GET(req) {
   try {
@@ -15,11 +17,7 @@ export async function GET(req) {
     await dbConnect();
     
     let query = {};
-    if (session.user.role === "TEACHER") {
-      const teacher = await Teacher.findOne({ email: session.user.email });
-      if (!teacher) return NextResponse.json([]);
-      query.teacherId = teacher._id;
-    } else if (session.user.role === "STUDENT") {
+    if (session.user.role === "STUDENT") {
       query["students.studentId"] = session.user.id;
     }
 
@@ -45,32 +43,50 @@ export async function POST(req) {
     await dbConnect();
     
     const body = await req.json();
+    const validation = validate(attendanceSchema)(body);
+    if (!validation.valid) {
+      return NextResponse.json({ error: "Validation failed", details: validation.errors }, { status: 400 });
+    }
     const { date, grade, section, students } = body;
 
     if (!date || !grade) {
       return NextResponse.json({ error: "Date and grade are required" }, { status: 400 });
     }
 
-    // Normalize date to start of day (avoid timezone shift)
-    const dateObj = new Date(date);
-    if (isNaN(dateObj.getTime())) {
+    // Parse date parts directly from YYYY-MM-DD to avoid timezone shifts
+    const [year, month, day] = date.split('-').map(Number);
+    if (!year || !month || !day || day > 31 || month > 12) {
       return NextResponse.json({ error: "Invalid date value" }, { status: 400 });
     }
-    const normalizedDate = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
+    const normalizedDate = new Date(Date.UTC(year, month - 1, day));
 
-    // Prevent future dates
+    // Prevent future dates (compare in UTC)
     const now = new Date();
-    const todayUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     if (normalizedDate > todayUTC) {
       return NextResponse.json({ error: "Cannot mark attendance for a future date" }, { status: 400 });
     }
 
     // Check if attendance already exists for this class/date
     const existing = await Attendance.findOne({ date: normalizedDate, grade, section });
+    const presentStudents = students.filter(s => s.status === 'Present');
+
     if (existing) {
       existing.students = students;
       existing.date = normalizedDate;
       await existing.save();
+
+      if (presentStudents.length > 0) {
+        await Notification.insertMany(
+          presentStudents.map(s => ({
+            recipientRole: "STUDENT",
+            recipientId: s.studentId,
+            message: `Attendance marked for ${grade}${section ? ` (Sec ${section})` : ""} on ${date}`,
+            link: "/student/dashboard",
+          }))
+        );
+      }
+
       return NextResponse.json(existing);
     }
 
@@ -82,6 +98,17 @@ export async function POST(req) {
     }
 
     const newRecord = await Attendance.create(recordData);
+
+    if (presentStudents.length > 0) {
+      await Notification.insertMany(
+        presentStudents.map(s => ({
+          recipientRole: "STUDENT",
+          recipientId: s.studentId,
+          message: `Attendance marked for ${grade}${section ? ` (Sec ${section})` : ""} on ${date}`,
+          link: "/student/dashboard",
+        }))
+      );
+    }
 
     return NextResponse.json(newRecord, { status: 201 });
   } catch (err) {

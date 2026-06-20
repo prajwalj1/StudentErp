@@ -9,8 +9,8 @@ describe("Owner Attendance Page", () => {
   });
 
   it("has view toggle between register and mark attendance", () => {
-    cy.contains("Attendance Register").should("be.visible");
-    cy.contains("Mark Attendance").should("be.visible");
+    cy.contains("Register").should("be.visible");
+    cy.contains("button", "Mark").should("be.visible");
   });
 
   it("shows class selector", () => {
@@ -18,8 +18,7 @@ describe("Owner Attendance Page", () => {
   });
 
   it("switches to mark attendance view", () => {
-    cy.contains("Mark Attendance").click();
-    cy.contains("Mark All Present").should("be.visible");
-    cy.contains("Mark All Absent").should("be.visible");
+    cy.contains("button", "Mark").click();
+    cy.contains("Attendance Center").should("be.visible");
   });
 });

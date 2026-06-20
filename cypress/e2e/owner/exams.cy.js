@@ -8,7 +8,7 @@ describe("Owner Exams Page", () => {
 
   it("displays examination form", () => {
     cy.contains("Examination Form").should("be.visible");
-    cy.contains("Create and manage exam routines with 3 terms per grade.").should("be.visible");
+    cy.contains("Create and manage exam routines with 3 terms per grade").should("be.visible");
   });
 
   it("shows grade selector", () => {

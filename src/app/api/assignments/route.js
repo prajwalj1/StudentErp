@@ -40,7 +40,7 @@ export async function GET(req) {
       const submissions = await Submission.find({
         studentId: session.user.id,
         assignmentId: { $in: assignmentIds }
-      }).select("assignmentId status grade submittedAt").lean();
+      }).select("assignmentId status grade feedback submittedAt fileName").lean();
       const subMap = {};
       submissions.forEach(s => { subMap[s.assignmentId.toString()] = s; });
       const result = assignments.map(a => ({
@@ -62,7 +62,8 @@ export async function GET(req) {
         const total = currentIds.length || 1;
         const submissions = await Submission.countDocuments({
           assignmentId: a._id,
-          studentId: { $in: currentIds }
+          studentId: { $in: currentIds },
+          status: { $ne: 'returned' }
         });
         return { ...a, total, submissions };
       }));

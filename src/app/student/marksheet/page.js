@@ -42,7 +42,7 @@ export default function StudentMarksheet() {
     if (status === 'authenticated' && session?.user?.role === 'STUDENT') {
       const loadMarks = async () => {
         try {
-          const res = await fetch('/api/marks');
+          const res = await fetch(`/api/marks?grade=${session.user.grade}`);
           const data = await res.json();
           const marksArr = Array.isArray(data) ? data : [];
           setMarks(marksArr);
@@ -153,7 +153,7 @@ export default function StudentMarksheet() {
                 onError={e => { e.target.style.display = 'none'; }} />
               <div>
                 <h1 className="text-lg font-bold text-red-700 uppercase tracking-wide">Everest View Secondary Boarding School</h1>
-                <p className="text-xs text-slate-500">Kathmandu, Nepal</p>
+                <p className="text-xs text-slate-500">Mechinagar-8, Nepal</p>
                 <p className="text-xs text-slate-500 font-semibold mt-0.5">Academic Year {getNepaliYear(today)}</p>
               </div>
             </div>
@@ -187,7 +187,7 @@ export default function StudentMarksheet() {
           <div className="border border-slate-300 p-3 mb-4 text-sm grid grid-cols-2 gap-x-8 gap-y-1.5">
             <div><span className="text-slate-500 font-semibold">Student Name:</span> <span className="font-bold text-slate-800">{session?.user?.name}</span></div>
             <div><span className="text-slate-500 font-semibold">Roll Number:</span> <span className="font-bold text-slate-800">{studentInfo?.rollNumber || '-'}</span></div>
-            <div><span className="text-slate-500 font-semibold">Class:</span> <span className="font-bold text-slate-800">Grade {session?.user?.grade || studentInfo?.grade || '-'}</span></div>
+            <div><span className="text-slate-500 font-semibold">Class:</span> <span className="font-bold text-slate-800"> {session?.user?.grade || studentInfo?.grade || '-'}</span></div>
             <div><span className="text-slate-500 font-semibold">Father&apos;s Name:</span> <span className="font-bold text-slate-800">{studentInfo?.fatherName || '-'}</span></div>
             <div><span className="text-slate-500 font-semibold">Section:</span> <span className="font-bold text-slate-800">{studentInfo?.section || '-'}</span></div>
             <div><span className="text-slate-500 font-semibold">Contact:</span> <span className="font-bold text-slate-800">{studentInfo?.fatherMobile || '-'}</span></div>
@@ -196,6 +196,7 @@ export default function StudentMarksheet() {
           {/* Marks Table */}
           {selectedExam && sortedMarks.length > 0 && (
             <>
+              <div className="overflow-x-auto">
               <table className="w-full marksheet-table border-collapse mb-1">
                 <thead>
                   <tr>
@@ -228,6 +229,7 @@ export default function StudentMarksheet() {
                   })}
                 </tbody>
               </table>
+              </div>
 
               {/* Summary */}
               <div className="border-2 border-slate-300 p-3 mt-2 bg-slate-50">

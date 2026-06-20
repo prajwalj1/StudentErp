@@ -5,8 +5,8 @@ describe("Owner Classes Page", () => {
   });
 
   it("displays class schedules page", () => {
-    cy.contains("Class Schedules & Assign").should("be.visible");
-    cy.contains("Manage academic classes, rooms, time slots, and assigned teachers.").should("be.visible");
+    cy.contains("Class Schedules").should("be.visible");
+    cy.contains("classes across").should("be.visible");
   });
 
   it("shows stat cards", () => {
@@ -16,17 +16,16 @@ describe("Owner Classes Page", () => {
   });
 
   it("has search and grade filter", () => {
-    cy.getByPlaceholder("Search by subject, teacher name, or room...").should("exist");
-    cy.contains("Filter Grade:").should("be.visible");
+    cy.getByPlaceholder("Search by subject, teacher, or room...").should("exist");
   });
 
   it("opens add class schedule modal", () => {
-    cy.contains("Add Class Schedule").click();
-    cy.contains("Add New Class Schedule").should("be.visible");
-    cy.contains("Subject Name").should("be.visible");
+    cy.contains("Add Class").click();
+    cy.contains("Add Class Schedule").should("be.visible");
+    cy.contains("Subject").should("be.visible");
     cy.contains("Grade").should("be.visible");
     cy.contains("Section").should("be.visible");
-    cy.contains("Schedule Time").should("be.visible");
+    cy.contains("Time Slot").should("be.visible");
     cy.contains("Assign Teacher").should("be.visible");
   });
 });

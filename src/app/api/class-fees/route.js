@@ -12,8 +12,10 @@ const syncStudents = async (grade, totalFee) => {
   const students = await Student.find({ grade });
   const ops = students.map(s => {
     const paidAmount = s.paidAmount || 0;
-    const dueAmount = Math.max(0, totalFee - paidAmount);
-    const feeStatus = paidAmount <= 0 ? "pending" : dueAmount <= 0 ? "completed" : "partial";
+    const prevDue = s.previousDue || 0;
+    const scholarship = s.scholarship || 0;
+    const dueAmount = Math.max(0, totalFee + prevDue - scholarship - paidAmount);
+    const feeStatus = dueAmount <= 0 ? "completed" : (paidAmount > 0 || prevDue > 0) ? "partial" : "pending";
     return {
       updateOne: {
         filter: { _id: s._id },
@@ -129,7 +131,7 @@ export async function DELETE(req) {
     const ops = students.map(s => ({
       updateOne: {
         filter: { _id: s._id },
-        update: { $set: { totalFee: 0, dueAmount: 0, feeStatus: "pending" } }
+        update: { $set: { totalFee: 0, previousDue: 0, paidAmount: 0, scholarship: 0, dueAmount: 0, feeStatus: "pending" } }
       }
     }));
     if (ops.length > 0) await Student.bulkWrite(ops);

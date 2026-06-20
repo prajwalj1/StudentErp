@@ -1,11 +1,11 @@
 export default function CookiePolicy() {
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-4xl mx-auto px-6 pt-32 pb-24">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-32 pb-24">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 border border-blue-100 rounded-full mb-6">
           <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Legal</span>
         </div>
-        <h1 className="text-4xl font-extrabold text-slate-900 mb-2">Cookie Policy</h1>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 mb-2">Cookie Policy</h1>
         <p className="text-sm text-slate-400 mb-10">Last updated: June 2026</p>
 
         <div className="space-y-8 text-slate-600 leading-relaxed">
