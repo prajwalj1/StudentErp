@@ -29,7 +29,7 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
 
-    const callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl") || undefined;
+    const callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl") || "/";
 
     await signIn("credentials", {
       redirect: true,
