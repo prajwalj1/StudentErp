@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { signIn, useSession } from "next-auth/react";
+import { signIn, useSession, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { ArrowRightIcon } from "@heroicons/react/24/outline";
 
@@ -39,7 +39,13 @@ export default function LoginPage() {
     if (result?.ok) {
       sessionStorage.removeItem('noticePopupShown');
       setLoginSuccess(true);
-      setTimeout(() => router.refresh(), 1500);
+      setTimeout(async () => {
+        const updatedSession = await getSession();
+        if (updatedSession?.user?.role === "OWNER") router.replace("/owner/dashboard");
+        else if (updatedSession?.user?.role === "TEACHER") router.replace("/teacher/dashboard");
+        else if (updatedSession?.user?.role === "STUDENT") router.replace("/student/dashboard");
+        else router.replace("/");
+      }, 1500);
     } else {
       setError("Invalid credentials. Please try again.");
     }
