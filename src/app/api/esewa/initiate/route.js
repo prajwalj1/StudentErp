@@ -48,7 +48,7 @@ export async function POST(req) {
     const totalAmount = String(amount);
     const productCode = process.env.ESEWA_MERCHANT_CODE || "EPAYTEST";
     const secretKey = process.env.ESEWA_SECRET_KEY || "8gBm/:&EnhH.1/q";
-    const siteUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const siteUrl = req.nextUrl.origin;
 
     const signature = generateSignature(totalAmount, transactionUuid, productCode, secretKey);
 

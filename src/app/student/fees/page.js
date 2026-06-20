@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { CurrencyDollarIcon, CheckCircleIcon, XCircleIcon, PrinterIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { toNepaliDate, getNepaliYear } from '@/lib/nepaliDate';
 
@@ -11,6 +11,7 @@ function FeesContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const formRef = useRef(null);
   const billRef = useRef(null);
 
@@ -33,8 +34,13 @@ function FeesContent() {
   }, [paymentStatus]);
 
   useEffect(() => {
-    if (status === 'unauthenticated' || (session && session.user.role !== 'STUDENT')) router.push('/login');
-  }, [status, session, router]);
+    if (status === 'unauthenticated') {
+      const callbackUrl = pathname + (searchParams.toString() ? '?' + searchParams.toString() : '');
+      router.push('/login?callbackUrl=' + encodeURIComponent(callbackUrl));
+    } else if (session && session.user.role !== 'STUDENT') {
+      router.push('/login');
+    }
+  }, [status, session, router, pathname, searchParams]);
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.role === 'STUDENT') {
