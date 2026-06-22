@@ -5,4 +5,10 @@ export const dynamic = "force-dynamic";
 
 const handler = NextAuth(authOptions);
 
-export { handler as GET, handler as POST };
+export async function GET(request, context) {
+  return handler(request, context);
+}
+
+export async function POST(request, context) {
+  return handler(request, context);
+}

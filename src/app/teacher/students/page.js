@@ -3,18 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { PlusIcon, UserIcon, AcademicCapIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { NepaliDatePicker } from 'react-bs-calender';
-import 'react-bs-calender/styles.css';
+import { UserIcon, AcademicCapIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function TeacherStudentsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [students, setStudents] = useState([]);
-  const [myGrades, setMyGrades] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [formData, setFormData] = useState({ name: '', grade: '', section: 'A', fatherName: '', fatherMobile: '', dob: '', address: '', attendance: 100 });
 
   const [filterGrade, setFilterGrade] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,12 +28,6 @@ export default function TeacherStudentsPage() {
     }
   }, [status, session]);
 
-  useEffect(() => {
-    if (myGrades.length > 0 && !formData.grade) {
-      setFormData(prev => ({ ...prev, grade: myGrades[0] }));
-    }
-  }, [myGrades]);
-
   const fetchStudents = async () => {
     try {
       const [studentsRes, classesRes] = await Promise.all([
@@ -53,7 +42,6 @@ export default function TeacherStudentsPage() {
           return c.teacherId.email.toLowerCase() === session.user.email.toLowerCase();
         });
         const gradeSet = new Set(assigned.map(c => c.grade).filter(Boolean));
-        setMyGrades([...gradeSet]);
         const filtered = studentsData.filter(s => gradeSet.has(s.grade));
         setStudents(filtered);
       }
@@ -72,28 +60,6 @@ export default function TeacherStudentsPage() {
 
   const uniqueGrades = ['All', ...new Set(students.map(s => s.grade))];
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await fetch('/api/students', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-      if (res.ok) {
-        setShowAddModal(false);
-        setFormData({ name: '', grade: myGrades[0] || '', section: 'A', fatherName: '', fatherMobile: '', dob: '', address: '', attendance: 100 });
-        fetchStudents();
-      } else {
-        const errData = await res.json();
-        alert(`Failed to add student: ${errData.error || 'Unknown error'}`);
-      }
-    } catch (error) {
-      console.error("Error adding student:", error);
-      alert("Network error: Could not reach the server.");
-    }
-  };
-
   if (loading) return <div className="p-8 flex justify-center"><div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>;
 
   const modalOverlay = 'fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4';
@@ -106,7 +72,7 @@ export default function TeacherStudentsPage() {
             <UserIcon className="w-8 h-8 text-blue-600" />
             Students
           </h1>
-          <p className="text-slate-500 text-sm mt-1">View and add students.</p>
+          <p className="text-slate-500 text-sm mt-1">View your assigned students.</p>
         </div>
         <div className="flex flex-wrap gap-3 w-full md:w-auto">
           <input
@@ -123,13 +89,6 @@ export default function TeacherStudentsPage() {
           >
             {uniqueGrades.map(g => <option key={g} value={g}>{g === 'All' ? 'All Grades' : g}</option>)}
           </select>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-lg shadow-blue-200 transition-all duration-300"
-          >
-            <PlusIcon className="w-5 h-5" />
-            Add Student
-          </button>
         </div>
       </div>
 
@@ -244,84 +203,6 @@ export default function TeacherStudentsPage() {
         </div>
       )}
 
-      {/* Add Student Modal */}
-      {showAddModal && (
-        <div className={modalOverlay + ' overflow-y-auto'}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden my-8" style={{ animationDuration: '0.3s', animationIterationCount: 1, animationName: 'zoomIn' }}>
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <AcademicCapIcon className="w-6 h-6 text-blue-600" />
-                Add New Student
-              </h2>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-200/50 transition-all">
-                <PlusIcon className="w-6 h-6 rotate-45" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Full Name</label>
-                <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none transition-all text-sm font-medium"
-                  placeholder="e.g. Aarav Sharma" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Grade / Class</label>
-                  <select required value={formData.grade} onChange={e => setFormData({ ...formData, grade: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none transition-all text-sm font-semibold text-slate-700 cursor-pointer">
-                    {myGrades.map(g => <option key={g} value={g}>{g}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Section</label>
-                  <input type="text" value={formData.section} onChange={e => setFormData({ ...formData, section: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none transition-all text-sm font-medium"
-                    placeholder="e.g. A, B" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Father's Name</label>
-                  <input type="text" value={formData.fatherName} onChange={e => setFormData({ ...formData, fatherName: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none transition-all text-sm font-medium"
-                    placeholder="e.g. Ram Sharma" />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Father's Mobile</label>
-                  <input type="text" value={formData.fatherMobile} onChange={e => setFormData({ ...formData, fatherMobile: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none transition-all text-sm font-medium"
-                    placeholder="e.g. 98XXXXXXXX" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 items-start">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Date of Birth (Nepali)</label>
-                  <NepaliDatePicker
-                    value={formData.dob ? formData.dob.replace(/-/g, '/') : ''}
-                    onChange={(date, nepaliDateString) => {
-                      setFormData({ ...formData, dob: nepaliDateString || '' });
-                    }}
-                    locale="en"
-                    placeholder="YYYY/MM/DD"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Address</label>
-                  <input type="text" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none transition-all text-sm font-medium"
-                    placeholder="e.g. Kathmandu, Nepal" />
-                </div>
-              </div>
-              <div className="pt-4 flex gap-3 border-t border-slate-100">
-                <button type="button" onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition-all text-sm">Cancel</button>
-                <button type="submit"
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all text-sm">Save Student</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
       <style jsx>{`
         @keyframes zoomIn {
           from { opacity: 0; transform: scale(0.95); }
