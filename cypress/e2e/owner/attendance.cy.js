@@ -1,6 +1,11 @@
 describe("Owner Attendance Page", () => {
   beforeEach(() => {
     cy.loginAsOwner();
+    cy.intercept("GET", "/api/students", [
+      { _id: "stu1", name: "Test Student A", grade: "10", section: "A", status: "active" },
+      { _id: "stu2", name: "Test Student B", grade: "10", section: "A", status: "active" },
+    ]).as("mockStudentsData");
+    cy.intercept("GET", "/api/attendance", []).as("mockAttendanceData");
     cy.visit("/owner/attendance");
   });
 

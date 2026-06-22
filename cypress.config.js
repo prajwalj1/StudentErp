@@ -2,6 +2,7 @@ const { defineConfig } = require("cypress");
 const { encode } = require("next-auth/jwt");
 const fs = require("fs");
 const path = require("path");
+const http = require("http");
 
 // Manually load .env to get NEXTAUTH_SECRET
 const envPath = path.join(__dirname, ".env");
@@ -18,6 +19,53 @@ if (fs.existsSync(envPath)) {
       }
     }
   }
+}
+
+const WARMUP_ROUTES = [
+  "/api/auth/csrf",
+  "/api/auth/session",
+  "/api/auth/providers",
+  "/api/contact",
+  "/api/subscribe",
+  "/api/system-health",
+  "/login",
+  "/owner/dashboard",
+  "/owner/teachers",
+  "/owner/students",
+  "/owner/classes",
+  "/owner/attendance",
+  "/owner/marks",
+  "/owner/fees",
+  "/owner/exams",
+  "/owner/results",
+  "/owner/reports",
+  "/owner/notices",
+  "/owner/passout",
+  "/teacher/dashboard",
+  "/teacher/classes",
+  "/teacher/students",
+  "/teacher/attendance",
+  "/teacher/exams",
+  "/teacher/assignments",
+  "/teacher/marks",
+  "/teacher/notices",
+  "/student/dashboard",
+  "/student/assignments",
+  "/student/marksheet",
+  "/student/fees",
+  "/student/routine",
+];
+
+function warmupRoute(url, pathname) {
+  return new Promise((resolve) => {
+    const req = http.get(`${url}${pathname}`, (res) => {
+      let body = "";
+      res.on("data", (chunk) => { body += chunk; });
+      res.on("end", () => resolve({ path: pathname, status: res.statusCode }));
+    });
+    req.on("error", (err) => resolve({ path: pathname, error: err.message }));
+    req.setTimeout(15000, () => { req.destroy(); resolve({ path: pathname, error: "timeout" }); });
+  });
 }
 
 module.exports = defineConfig({
@@ -47,6 +95,15 @@ module.exports = defineConfig({
             maxAge: 30 * 24 * 60 * 60,
           });
           return token;
+        },
+        async warmupRoutes() {
+          const baseUrl = "http://localhost:3000";
+          const results = await Promise.all(WARMUP_ROUTES.map((r) => warmupRoute(baseUrl, r)));
+          const failed = results.filter((r) => r.status !== 200 && r.status !== 308 && r.status !== 401);
+          if (failed.length > 0) {
+            console.warn("Warm-up non-200 responses:", JSON.stringify(failed));
+          }
+          return { total: results.length, failed: failed.length };
         },
       });
     },

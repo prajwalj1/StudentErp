@@ -10,12 +10,36 @@ const mockSession = (role, extra) => ({
 });
 
 Cypress.Commands.add("loginAsOwner", () => {
+  cy.intercept("GET", "/api/auth/session", {
+    statusCode: 200,
+    body: mockSession("OWNER"),
+  }).as("mockOwnerSession");
+
+  cy.intercept("GET", "/api/teachers", []).as("mockTeachers");
+  cy.intercept("GET", "/api/students", []).as("mockStudents");
+  cy.intercept("GET", "/api/classes", []).as("mockClasses");
+  cy.intercept("GET", "/api/fees", { students: [], payments: [], classFees: [] }).as("mockFees");
+  cy.intercept("GET", "/api/exams", []).as("mockExams");
+  cy.intercept("GET", "/api/exam-routines", []).as("mockExamRoutines");
+  cy.intercept("GET", "/api/attendance", []).as("mockAttendance");
+  cy.intercept("GET", "/api/marks", []).as("mockMarks");
+  cy.intercept("GET", "/api/notices", []).as("mockNotices");
+  cy.intercept("GET", "/api/owner/stats", {
+    students: 0, teachers: 0, revenue: 0, attendance: 0,
+    totalFee: 0, totalPaid: 0, totalDue: 0, gradeDistribution: [],
+    recentStudents: [], recentPayments: [], recentTeachers: [],
+  }).as("mockOwnerStats");
+  cy.intercept("GET", "/api/system-health", { status: "healthy" }).as("mockHealth");
+  cy.intercept("GET", "/api/notifications", []).as("mockNotifications");
+
   cy.session("owner", () => {
-    cy.visit("/login");
-    cy.get('input[placeholder="Enter email or ID"]').type("owner@erp.com");
-    cy.get('input[placeholder="Enter password"]').type("password");
-    cy.get('button[type="submit"]').click();
-    cy.url({ timeout: 20000 }).should("include", "/owner/dashboard");
+    cy.clearAllCookies();
+    cy.clearAllLocalStorage();
+    cy.task("createSessionToken", { role: "OWNER", name: "Owner", email: "owner@erp.com" }).then((token) => {
+      cy.setCookie("next-auth.session-token", token);
+    });
+    cy.visit("/owner/dashboard");
+    cy.url({ timeout: 10000 }).should("include", "/owner/dashboard");
   });
 });
 

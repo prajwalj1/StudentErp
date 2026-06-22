@@ -26,6 +26,10 @@ describe("Owner Teachers Page", () => {
   });
 
   it("shows teacher table with correct columns", () => {
+    cy.intercept("GET", "/api/teachers", [
+      { _id: "tch1", name: "Test Teacher", email: "teacher@school.com", teacherId: "TCH001" },
+    ]).as("mockTeachersData");
+    cy.visit("/owner/teachers");
     cy.contains("Teacher").should("be.visible");
     cy.contains("Email").should("be.visible");
     cy.contains("Teacher ID").should("be.visible");
