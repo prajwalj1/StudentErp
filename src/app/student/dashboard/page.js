@@ -54,6 +54,7 @@ export default function StudentDashboard() {
   const [showNoticePopup, setShowNoticePopup] = useState(false);
   const [noticeIndex, setNoticeIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const dismissedKey = `dismissedNotices_${session?.user?.id || ''}`;
 
   const today = new Date();
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -104,8 +105,12 @@ export default function StudentDashboard() {
             return true;
           });
           setNotices(activeNotices);
-          const unseen = activeNotices.filter(n => n.imageUrl);
-          if (unseen.length > 0 && !sessionStorage.getItem('noticePopupShown')) { setShowNoticePopup(true); setNoticeIndex(0); }
+          const dismissed = JSON.parse(localStorage.getItem(dismissedKey) || '[]');
+          const activeIds = new Set(activeNotices.map(n => n._id));
+          const validDismissed = dismissed.filter(id => activeIds.has(id));
+          localStorage.setItem(dismissedKey, JSON.stringify(validDismissed));
+          const unseen = activeNotices.filter(n => n.imageUrl && !validDismissed.includes(n._id));
+          if (unseen.length > 0) { setShowNoticePopup(true); setNoticeIndex(activeNotices.findIndex(n => n._id === unseen[0]._id)); }
 
           setAttLoading(false); setLoading(false);
         })
@@ -114,6 +119,8 @@ export default function StudentDashboard() {
   }, [status, session]);
 
   const dismissNotice = (id) => {
+    const dismissed = JSON.parse(localStorage.getItem(dismissedKey) || '[]');
+    localStorage.setItem(dismissedKey, JSON.stringify([...new Set([...dismissed, id])]));
     setNotices(prev => prev.filter(n => n._id !== id));
   };
 
@@ -330,24 +337,26 @@ export default function StudentDashboard() {
       </div>
 
       {/* ─── Notice Popup ─── */}
-      {showNoticePopup && notices.length > 0 && noticeIndex < notices.length && (
+      {showNoticePopup && notices.length > 0 && noticeIndex < notices.length && notices[noticeIndex]?.imageUrl && (
         <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
           <button onClick={() => {
-            const remaining = notices.filter(n => n.imageUrl);
-            const idx = remaining.findIndex(n => n._id === notices[noticeIndex]?._id);
-            if (remaining.length > 1 && idx < remaining.length - 1) {
-              setNoticeIndex(notices.findIndex(n => n._id === remaining[idx + 1]._id));
+            const currentId = notices[noticeIndex]?._id;
+            if (currentId) {
+              const dismissed = JSON.parse(localStorage.getItem(dismissedKey) || '[]');
+              localStorage.setItem(dismissedKey, JSON.stringify([...new Set([...dismissed, currentId])]));
+            }
+            const dismissedIds = JSON.parse(localStorage.getItem(dismissedKey) || '[]');
+            const remaining = notices.filter(n => n.imageUrl && !dismissedIds.includes(n._id));
+            if (remaining.length > 0) {
+              setNoticeIndex(notices.findIndex(n => n._id === remaining[0]._id));
             } else {
-              sessionStorage.setItem('noticePopupShown', '1');
               setShowNoticePopup(false);
             }
           }}
             className="absolute top-4 right-4 z-10 cursor-pointer rounded-full bg-white/20 p-2 text-white transition-colors hover:bg-white/40">
             <XMarkIcon className="h-6 w-6" />
           </button>
-          {notices[noticeIndex]?.imageUrl && (
-            <img src={notices[noticeIndex].imageUrl} alt="Notice" className="max-h-full max-w-full object-contain p-8" />
-          )}
+          <img src={notices[noticeIndex].imageUrl} alt="Notice" className="max-h-full max-w-full object-contain p-8" />
         </div>
       )}
     </div>

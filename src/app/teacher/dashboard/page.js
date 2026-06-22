@@ -49,10 +49,13 @@ export default function TeacherDashboard() {
   const [selectedGrade, setSelectedGrade] = useState('');
   const [performanceStats, setPerformanceStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(false);
+  const dismissedKey = `dismissedNotices_${session?.user?.id || ''}`;
 
   const showToast = (type, text) => setToast({ type, text });
 
   const dismissNotice = (id) => {
+    const dismissed = JSON.parse(localStorage.getItem(dismissedKey) || '[]');
+    localStorage.setItem(dismissedKey, JSON.stringify([...new Set([...dismissed, id])]));
     setNotices(prev => prev.filter(n => n._id !== id));
   };
 
@@ -87,9 +90,13 @@ export default function TeacherDashboard() {
           if (n.expiryDate && new Date(n.expiryDate) < now) return false;
           return true;
         });
-        setNotices(active.slice(0, 3));
-        const hasImage = active.slice(0, 3).some(n => n.imageUrl);
-        if (hasImage && !sessionStorage.getItem('noticePopupShown')) { setShowNoticePopup(true); setNoticePopupIndex(0); }
+        setNotices(active);
+        const dismissed = JSON.parse(localStorage.getItem(dismissedKey) || '[]');
+        const activeIds = new Set(active.map(n => n._id));
+        const validDismissed = dismissed.filter(id => activeIds.has(id));
+        localStorage.setItem(dismissedKey, JSON.stringify(validDismissed));
+        const unseen = active.filter(n => n.imageUrl && !validDismissed.includes(n._id));
+        if (unseen.length > 0) { setShowNoticePopup(true); setNoticePopupIndex(active.findIndex(n => n._id === unseen[0]._id)); }
       }
     } catch (e) { console.error(e) } finally { setLoading(false); }
   };
@@ -287,7 +294,7 @@ export default function TeacherDashboard() {
                     className="text-[10px] font-bold text-blue-600 hover:text-blue-700 transition-colors">View All</button>
                 </div>
                 <div className="space-y-3">
-                  {notices.map((n) => (
+                  {notices.slice(0, 3).map((n) => (
                     <div key={n._id} className="relative rounded-xl border border-slate-100 bg-slate-50 p-3 pr-9">
                       <button onClick={() => dismissNotice(n._id)}
                         className="absolute top-2 right-2 rounded p-0.5 text-slate-300 transition-all hover:bg-red-50 hover:text-red-500">
@@ -314,12 +321,16 @@ export default function TeacherDashboard() {
       {showNoticePopup && notices.length > 0 && noticePopupIndex < notices.length && notices[noticePopupIndex]?.imageUrl && (
         <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
           <button onClick={() => {
-            const remaining = notices.filter(n => n.imageUrl);
-            const idx = remaining.findIndex(n => n._id === notices[noticePopupIndex]?._id);
-            if (remaining.length > 1 && idx < remaining.length - 1) {
-              setNoticePopupIndex(notices.findIndex(n => n._id === remaining[idx + 1]._id));
+            const currentId = notices[noticePopupIndex]?._id;
+            if (currentId) {
+              const dismissed = JSON.parse(localStorage.getItem(dismissedKey) || '[]');
+              localStorage.setItem(dismissedKey, JSON.stringify([...new Set([...dismissed, currentId])]));
+            }
+            const dismissedIds = JSON.parse(localStorage.getItem(dismissedKey) || '[]');
+            const remaining = notices.filter(n => n.imageUrl && !dismissedIds.includes(n._id));
+            if (remaining.length > 0) {
+              setNoticePopupIndex(notices.findIndex(n => n._id === remaining[0]._id));
             } else {
-              sessionStorage.setItem('noticePopupShown', '1');
               setShowNoticePopup(false);
             }
           }}

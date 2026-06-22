@@ -40,7 +40,7 @@ export async function sendNoticeEmail({ to, title, content, imageUrl, createdByN
     }
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || baseUrl || "https://everestview.edu.np";
+  const siteUrl = baseUrl || process.env.NEXT_PUBLIC_APP_URL || "https://student-erp-livid.vercel.app";
   const unsubscribeUrl = `${siteUrl}/api/unsubscribe?email=${encodeURIComponent(to)}`;
 
   await transporter.sendMail({
