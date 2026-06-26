@@ -45,12 +45,12 @@ export const attendanceSchema = z.object({
 });
 
 export const examSchema = z.object({
-  name: z.string().min(1, "Exam name is required"),
+  title: z.string().min(1, "Exam title is required"),
   grade: z.string().min(1, "Grade is required"),
   subject: z.string().min(1, "Subject is required"),
-  date: z.string().optional(),
-  fullMarks: z.number().positive().optional(),
-  passMarks: z.number().positive().optional(),
+  date: z.string().min(1, "Date is required"),
+  status: z.enum(["Upcoming", "Completed", "Published"]).optional(),
+  questionPaper: z.string().optional(),
 });
 
 export const markSchema = z.object({

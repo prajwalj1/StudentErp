@@ -23,7 +23,7 @@ export async function GET(req) {
       return NextResponse.json(exams);
     }
 
-    const exams = await Exam.find({ date: { $gte: today } }).sort({ date: 1 }).lean();
+    const exams = await Exam.find().sort({ date: 1 }).lean();
     return NextResponse.json(exams);
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });

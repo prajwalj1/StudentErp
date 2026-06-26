@@ -345,7 +345,7 @@ export default function TeacherExamsPage() {
           <div className="w-full max-w-3xl animate-[zoomIn_0.2s_ease-out] rounded-2xl bg-white shadow-2xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50 shrink-0 rounded-t-2xl">
               <div>
-                <h2 className="text-sm font-black text-slate-900">{viewPaper.subject} \u2014 Question Paper</h2>
+                <h2 className="text-sm font-black text-slate-900">{viewPaper.subject} \ Question Paper</h2>
                 <p className="text-xs text-slate-500 mt-0.5">{viewPaper.term} \ {viewPaper.grade}</p>
               </div>
               <div className="flex items-center gap-2">

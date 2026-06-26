@@ -45,8 +45,9 @@ export default function ResultsPage() {
     style.id = 'print-marksheet-styles';
     style.textContent = '@media print{' +
       '@page{margin:0.5in}' +
+      'body>div,body>div>div,body>div>div>main{overflow:visible!important;display:block!important}' +
       'body>div>aside,body>div>div>header{display:none!important}' +
-      'body>div>div>main{margin-left:0!important;padding:0!important;overflow:visible!important;display:block!important}' +
+      'body>div>div>main{margin-left:0!important;padding:0!important}' +
       'body>div>div>main>div{padding:0!important;margin:0!important;max-width:none!important}' +
     '}';
     document.head.appendChild(style);
@@ -201,7 +202,7 @@ export default function ResultsPage() {
                       <p className="text-[10px] text-slate-500 font-semibold mt-1">Mechinagar -7, Jhapa, Nepal</p>
                     </div>
                   </div>
-                  <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">{examType} Examinations \u2014 Marksheet</p>
+                  <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">{examType} Examinations \ Marksheet</p>
                 </div>
 
                 {/* Student Info */}
