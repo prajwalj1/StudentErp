@@ -141,7 +141,8 @@ export default function MarksEntryPage() {
         body: JSON.stringify({ classScheduleId: selectedSubjectId, examType, marksData })
       });
       if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2000); }
-    } catch (e) { console.error(e) } finally { setSaving(false); }
+      else { const err = await res.json(); alert(err.error || 'Failed to save marks.'); }
+    } catch (e) { alert('Network error. Please try again.'); } finally { setSaving(false); }
   };
 
   const filteredStudents = allStudents.filter(s => {
@@ -286,7 +287,10 @@ export default function MarksEntryPage() {
                           <div className="relative flex-1">
                             <input ref={el => inputRefs.current[student._id] = el} type="number" min="0" max="100"
                               value={marks[student._id] !== undefined ? marks[student._id] : ''}
-                              onChange={(e) => setMarks(prev => ({ ...prev, [student._id]: e.target.value }))}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '' || Number(val) <= 100) setMarks(prev => ({ ...prev, [student._id]: val }));
+                              }}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                   e.preventDefault();

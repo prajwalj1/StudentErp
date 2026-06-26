@@ -54,11 +54,13 @@ export const examSchema = z.object({
 });
 
 export const markSchema = z.object({
-  studentId: z.string().min(1),
-  examId: z.string().min(1),
-  subject: z.string().min(1),
-  marksObtained: z.number().min(0, "Marks cannot be negative"),
-  grade: z.string().optional(),
+  classScheduleId: z.string().min(1),
+  examType: z.string().min(1),
+  marksData: z.array(z.object({
+    studentId: z.string().min(1),
+    marksObtained: z.number().min(0, "Marks cannot be negative"),
+    totalMarks: z.number().min(1).optional(),
+  })).min(1, "At least one student mark required"),
 });
 
 export const noticeSchema = z.object({
